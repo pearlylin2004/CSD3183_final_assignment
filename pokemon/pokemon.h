@@ -26,9 +26,22 @@ public:
     };
     std::vector<LearnMove> learnset;
 
+    int attack_stage = 0;
+    int defense_stage = 0;
+    int speed_stage = 0;
+    int accuracy_stage = 0;
+    int evasion_stage = 0;
+
     Pokemon(std::string n, Type t1, Type t2, int b_hp, int b_atk, int b_def, int b_spd);
 
     void setLevel(int newLevel);
+    void resetStages();
+
+    int getAttack() const;
+    int getDefense() const;
+    int getSpeed() const;
+    float getAccuracyMultiplier() const;
+    float getEvasionMultiplier() const;
 
     void addMove(Move m);
     void addLearnMove(int lvl, Move m);

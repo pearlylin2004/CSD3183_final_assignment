@@ -60,3 +60,43 @@ void Pokemon::heal(int amount) {
     current_hp += amount;
     if (current_hp > max_hp) current_hp = max_hp;
 }
+
+void Pokemon::resetStages() {
+    attack_stage = 0;
+    defense_stage = 0;
+    speed_stage = 0;
+    accuracy_stage = 0;
+    evasion_stage = 0;
+}
+
+static float getStatMultiplier(int stage) {
+    if (stage > 0) return (2.0f + stage) / 2.0f;
+    if (stage < 0) return 2.0f / (2.0f - stage);
+    return 1.0f;
+}
+
+static float getAccEvaMultiplier(int stage) {
+    if (stage > 0) return (3.0f + stage) / 3.0f;
+    if (stage < 0) return 3.0f / (3.0f - stage);
+    return 1.0f;
+}
+
+int Pokemon::getAttack() const {
+    return static_cast<int>(attack * getStatMultiplier(attack_stage));
+}
+
+int Pokemon::getDefense() const {
+    return static_cast<int>(defense * getStatMultiplier(defense_stage));
+}
+
+int Pokemon::getSpeed() const {
+    return static_cast<int>(speed * getStatMultiplier(speed_stage));
+}
+
+float Pokemon::getAccuracyMultiplier() const {
+    return getAccEvaMultiplier(accuracy_stage);
+}
+
+float Pokemon::getEvasionMultiplier() const {
+    return getAccEvaMultiplier(evasion_stage);
+}

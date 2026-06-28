@@ -22,48 +22,48 @@ int main() {
 
     Pokemon charmander("Charmander", Type::Fire, Type::None, 39, 52, 43, 65);
     charmander.addLearnMove(1, {"Scratch", Type::Normal, 40, 100});
-    charmander.addLearnMove(1, {"Growl", Type::Normal, 0, 100});
+    charmander.addLearnMove(1, {"Growl", Type::Normal, 0, 100, Stat::Attack, -1, false});
     charmander.addLearnMove(7, {"Ember", Type::Fire, 40, 100});
     charmander.addLearnMove(10, {"Metal Claw", Type::Normal, 50, 95});
     allPokemon.push_back(charmander);
 
     Pokemon squirtle("Squirtle", Type::Water, Type::None, 44, 48, 65, 43);
     squirtle.addLearnMove(1, {"Tackle", Type::Normal, 40, 100});
-    squirtle.addLearnMove(1, {"Tail Whip", Type::Normal, 0, 100});
+    squirtle.addLearnMove(1, {"Tail Whip", Type::Normal, 0, 100, Stat::Defense, -1, false});
     squirtle.addLearnMove(7, {"Bubble", Type::Water, 20, 100});
-    squirtle.addLearnMove(10, {"Withdraw", Type::Water, 0, 100});
+    squirtle.addLearnMove(10, {"Withdraw", Type::Water, 0, 100, Stat::Defense, 1, true});
     allPokemon.push_back(squirtle);
 
     Pokemon bulbasaur("Bulbasaur", Type::Grass, Type::None, 45, 49, 49, 45);
     bulbasaur.addLearnMove(1, {"Tackle", Type::Normal, 40, 100});
-    bulbasaur.addLearnMove(1, {"Growl", Type::Normal, 0, 100});
+    bulbasaur.addLearnMove(1, {"Growl", Type::Normal, 0, 100, Stat::Attack, -1, false});
     bulbasaur.addLearnMove(7, {"Leech Seed", Type::Grass, 0, 90});
     bulbasaur.addLearnMove(10, {"Vine Whip", Type::Grass, 45, 100});
     allPokemon.push_back(bulbasaur);
     
     Pokemon pidgey("Pidgey", Type::Normal, Type::None, 40, 45, 40, 56);
     pidgey.addLearnMove(1, {"Tackle", Type::Normal, 40, 100});
-    pidgey.addLearnMove(5, {"Sand Attack", Type::Normal, 0, 100});
+    pidgey.addLearnMove(5, {"Sand Attack", Type::Normal, 0, 100, Stat::Accuracy, -1, false});
     pidgey.addLearnMove(9, {"Gust", Type::Normal, 40, 100});
     allPokemon.push_back(pidgey);
 
     Pokemon pikachu("Pikachu", Type::Electric, Type::None, 35, 55, 40, 90);
     pikachu.addLearnMove(1, {"Thunder Shock", Type::Electric, 40, 100});
-    pikachu.addLearnMove(1, {"Growl", Type::Normal, 0, 100});
-    pikachu.addLearnMove(6, {"Tail Whip", Type::Normal, 0, 100});
+    pikachu.addLearnMove(1, {"Growl", Type::Normal, 0, 100, Stat::Attack, -1, false});
+    pikachu.addLearnMove(6, {"Tail Whip", Type::Normal, 0, 100, Stat::Defense, -1, false});
     pikachu.addLearnMove(10, {"Quick Attack", Type::Normal, 40, 100});
     allPokemon.push_back(pikachu);
 
     Pokemon geodude("Geodude", Type::Normal, Type::None, 40, 80, 100, 20); 
     geodude.addLearnMove(1, {"Tackle", Type::Normal, 40, 100});
-    geodude.addLearnMove(1, {"Defense Curl", Type::Normal, 0, 100});
-    geodude.addLearnMove(8, {"Mud Sport", Type::Normal, 0, 100});
+    geodude.addLearnMove(1, {"Defense Curl", Type::Normal, 0, 100, Stat::Defense, 1, true});
+    geodude.addLearnMove(8, {"Mud Sport", Type::Normal, 0, 100, Stat::Attack, -1, false});
     geodude.addLearnMove(10, {"Rock Throw", Type::Normal, 50, 90});
     allPokemon.push_back(geodude);
 
     Pokemon oddish("Oddish", Type::Grass, Type::None, 45, 50, 55, 30);
     oddish.addLearnMove(1, {"Absorb", Type::Grass, 20, 100});
-    oddish.addLearnMove(7, {"Sweet Scent", Type::Normal, 0, 100});
+    oddish.addLearnMove(7, {"Sweet Scent", Type::Normal, 0, 100, Stat::Evasion, -1, false});
     oddish.addLearnMove(9, {"Acid", Type::Normal, 40, 100});
     allPokemon.push_back(oddish);
 
@@ -71,6 +71,8 @@ int main() {
     abra.addLearnMove(1, {"Teleport", Type::Normal, 0, 100});
     abra.addLearnMove(10, {"Confusion", Type::Psychic, 50, 100});
     allPokemon.push_back(abra);
+
+    // add more pokemon here
 
     Trainer player("Red", 3);
     Trainer rival("Blue", 3);

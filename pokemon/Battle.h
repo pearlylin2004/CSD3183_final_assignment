@@ -8,6 +8,7 @@ enum class BattleState {
     PlayerTurn_Main,
     PlayerTurn_MoveSelect,
     PlayerTurn_SwitchSelect,
+    PlayerTurn_PotionConfirm,
     Action_Text, // displaying text like "Charmander used Scratch!"
     Check_Faint, // check if anyone fainted
     End // battle over
@@ -51,6 +52,9 @@ private:
     void updateHealthBars();
     void pushEvent(const std::string& msg, std::function<void()> action = nullptr);
     void resolveTurn(int playerMoveIndex, bool usedItemOrSwitched, int pHealAmount = 0);
+    
+    void simulateMove(Pokemon* attacker, Pokemon* defender, Move move, int& defHp);
+    void simulateEnemyPotion(Pokemon* eMon, int& eSimHp);
 
 public:
     Battle(Trainer* p, Trainer* e);

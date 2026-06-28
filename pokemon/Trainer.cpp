@@ -31,11 +31,11 @@ Pokemon* Trainer::getActivePokemon() {
 
 bool Trainer::switchPokemon(int index) {
     if (index >= 0 && index < party.size() && party[index].isAlive()) {
-        if (&party[index] == getActivePokemon()) {
-            return false; // Cannot switch to the pokemon that is already active
+        if (index == 0) { // Wait, the old code swapped, so active is always at 0
+            return false;
         }
-        // Swap selected pokemon to the front (index 0) to make it active
         std::swap(party[0], party[index]);
+        party[0].resetStages(); // Reset stages for the incoming pokemon
         return true;
     }
     return false;

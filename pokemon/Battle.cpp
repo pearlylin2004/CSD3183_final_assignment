@@ -44,6 +44,73 @@ void Battle::run(sf::RenderWindow& window) {
     }
 }
 
+void Battle::simulateMove(Pokemon* attacker, Pokemon* defender, Move move, int& defHp) {
+    std::string msg = attacker->name + " used " + move.name + "!";
+    int hitChance = std::rand() % 100 + 1;
+    int damage = 0;
+    float accMult = attacker->getAccuracyMultiplier();
+    float evaMult = defender->getEvasionMultiplier();
+    if (hitChance <= move.accuracy * (accMult / evaMult)) {
+        if (move.power > 0) {
+            float stab = (attacker->type1 == move.type || attacker->type2 == move.type) ? 1.5f : 1.0f;
+            float effectiveness = getTypeEffectiveness(move.type, defender->type1) * getTypeEffectiveness(move.type, defender->type2);
+            
+            damage = static_cast<int>((((2.0f * 5.0f / 5.0f + 2.0f) * move.power * ((float)attacker->getAttack() / defender->getDefense())) / 50.0f + 2.0f) * stab * effectiveness);
+            if (damage < 1) damage = 1;
+            
+            if (effectiveness > 1.0f) msg += "\nIt's super effective!";
+            else if (effectiveness < 1.0f && effectiveness > 0.0f) msg += "\nIt's not very effective...";
+            else if (effectiveness == 0.0f) msg += "\nIt had no effect!";
+        } else {
+            damage = 0;
+            if (move.statTarget != Stat::None) {
+                Pokemon* statTargetMon = move.targetSelf ? attacker : defender;
+                int* stagePtr = nullptr;
+                std::string statName = "";
+                if (move.statTarget == Stat::Attack) { stagePtr = &statTargetMon->attack_stage; statName = "Attack"; }
+                else if (move.statTarget == Stat::Defense) { stagePtr = &statTargetMon->defense_stage; statName = "Defense"; }
+                else if (move.statTarget == Stat::Speed) { stagePtr = &statTargetMon->speed_stage; statName = "Speed"; }
+                else if (move.statTarget == Stat::Accuracy) { stagePtr = &statTargetMon->accuracy_stage; statName = "Accuracy"; }
+                else if (move.statTarget == Stat::Evasion) { stagePtr = &statTargetMon->evasion_stage; statName = "Evasion"; }
+                
+                if (stagePtr) {
+                    int oldStage = *stagePtr;
+                    *stagePtr += move.statChange;
+                    if (*stagePtr > 6) *stagePtr = 6;
+                    if (*stagePtr < -6) *stagePtr = -6;
+                    
+                    if (*stagePtr == oldStage) {
+                        msg += "\n" + statTargetMon->name + "'s " + statName + " won't go any " + (move.statChange > 0 ? "higher!" : "lower!");
+                    } else {
+                        if (move.statChange > 1) msg += "\n" + statTargetMon->name + "'s " + statName + " sharply rose!";
+                        else if (move.statChange > 0) msg += "\n" + statTargetMon->name + "'s " + statName + " rose!";
+                        else if (move.statChange < -1) msg += "\n" + statTargetMon->name + "'s " + statName + " harshly fell!";
+                        else msg += "\n" + statTargetMon->name + "'s " + statName + " fell!";
+                    }
+                }
+            } else if (move.name == "Splash" || move.name == "Teleport") {
+                msg += "\nBut nothing happened!";
+            }
+        }
+    } else {
+        msg += "\nBut it missed!";
+    }
+
+    defHp -= damage;
+    pushEvent(msg, [defender, damage]() {
+        defender->takeDamage(damage);
+    });
+}
+
+void Battle::simulateEnemyPotion(Pokemon* eMon, int& eSimHp) {
+    enemy->potions--;
+    int healed = std::min(20, eMon->max_hp - eSimHp);
+    eSimHp += healed;
+    pushEvent("Trainer " + enemy->name + " used a Potion!\n" + eMon->name + " recovered " + std::to_string(healed) + " HP!", [eMon, this]() {
+        eMon->heal(20);
+    });
+}
+
 void Battle::resolveTurn(int playerMoveIndex, bool usedItemOrSwitched, int pHealAmount) {
     Pokemon* pMon = player->getActivePokemon();
     Pokemon* eMon = enemy->getActivePokemon();
@@ -63,56 +130,16 @@ void Battle::resolveTurn(int playerMoveIndex, bool usedItemOrSwitched, int pHeal
         enemyUsedPotion = true;
     }
 
-    auto simulateMove = [&](Pokemon* attacker, Pokemon* defender, Move move, int& defHp) {
-        std::string msg = attacker->name + " used " + move.name + "!";
-        int hitChance = std::rand() % 100 + 1;
-        int damage = 0;
-        if (hitChance <= move.accuracy) {
-            if (move.power > 0) {
-                float stab = (attacker->type1 == move.type || attacker->type2 == move.type) ? 1.5f : 1.0f;
-                float effectiveness = getTypeEffectiveness(move.type, defender->type1) * getTypeEffectiveness(move.type, defender->type2);
-                
-                damage = static_cast<int>((((2.0f * 5.0f / 5.0f + 2.0f) * move.power * ((float)attacker->attack / defender->defense)) / 50.0f + 2.0f) * stab * effectiveness);
-                if (damage < 1) damage = 1;
-                
-                if (effectiveness > 1.0f) msg += "\nIt's super effective!";
-                else if (effectiveness < 1.0f && effectiveness > 0.0f) msg += "\nIt's not very effective...";
-                else if (effectiveness == 0.0f) msg += "\nIt had no effect!";
-            } else {
-                damage = 0;
-                if (move.name == "Splash" || move.name == "Teleport") {
-                    msg += "\nBut nothing happened!";
-                }
-            }
-        } else {
-            msg += "\nBut it missed!";
-        }
-
-        defHp -= damage;
-        pushEvent(msg, [defender, damage]() {
-            defender->takeDamage(damage);
-        });
-    };
-
-    auto simulateEnemyPotion = [&]() {
-        enemy->potions--;
-        int healed = std::min(20, eMon->max_hp - eSimHp);
-        eSimHp += healed;
-        pushEvent("Trainer " + enemy->name + " used a Potion!\n" + eMon->name + " recovered " + std::to_string(healed) + " HP!", [eMon, this]() {
-            eMon->heal(20);
-        });
-    };
-
     // Determine turn order
     if (usedItemOrSwitched) {
         if (enemyUsedPotion) {
-            simulateEnemyPotion();
+            simulateEnemyPotion(eMon, eSimHp);
         } else {
             simulateMove(eMon, pMon, eMon->moves[enemyMoveIndex], pSimHp);
         }
     } else {
         if (enemyUsedPotion) {
-            simulateEnemyPotion();
+            simulateEnemyPotion(eMon, eSimHp);
             simulateMove(pMon, eMon, pMon->moves[playerMoveIndex], eSimHp);
         } else {
             bool playerGoesFirst = pMon->speed >= eMon->speed;
@@ -189,26 +216,39 @@ void Battle::processEvents(sf::RenderWindow& window) {
                         selectedMenuIndex = 0;
                     } else if (selectedMenuIndex == 1) { // Potion
                         if (player->potions > 0) {
-                            Pokemon* pMon = player->getActivePokemon();
-                            if (pMon) {
-                                player->potions--;
-                                int healed = std::min(20, pMon->max_hp - pMon->current_hp);
-                                
-                                pushEvent("You used a Potion!\n" + pMon->name + " recovered " + std::to_string(healed) + " HP!", [pMon]() {
-                                    pMon->heal(20);
-                                });
-                                resolveTurn(-1, true, healed);
-                            }
+                            currentState = BattleState::PlayerTurn_PotionConfirm;
                             selectedMenuIndex = 0;
                         }
                     } else if (selectedMenuIndex == 2) {
                         currentState = BattleState::PlayerTurn_SwitchSelect; // Pokemon
                         selectedMenuIndex = 0;
                     }
+                } else if (currentState == BattleState::PlayerTurn_PotionConfirm) {
+                    if (selectedMenuIndex == 0) {
+                        Pokemon* pMon = player->getActivePokemon();
+                        if (pMon) {
+                            player->potions--;
+                            int healed = std::min(20, pMon->max_hp - pMon->current_hp);
+                            
+                            pushEvent("You used a Potion!\n" + pMon->name + " recovered " + std::to_string(healed) + " HP!", [pMon]() {
+                                pMon->heal(20);
+                            });
+                            resolveTurn(-1, true, healed);
+                        }
+                        selectedMenuIndex = 0;
+                    } else {
+                        currentState = BattleState::PlayerTurn_Main;
+                        selectedMenuIndex = 1;
+                    }
                 } else if (currentState == BattleState::PlayerTurn_MoveSelect) {
                     Pokemon* pMon = player->getActivePokemon();
-                    if (pMon && selectedMenuIndex >= 0 && selectedMenuIndex < pMon->moves.size()) {
-                        resolveTurn(selectedMenuIndex, false);
+                    if (pMon) {
+                        if (selectedMenuIndex == pMon->moves.size()) {
+                            currentState = BattleState::PlayerTurn_Main;
+                            selectedMenuIndex = 0;
+                        } else if (selectedMenuIndex >= 0 && selectedMenuIndex < pMon->moves.size()) {
+                            resolveTurn(selectedMenuIndex, false);
+                        }
                     }
                 } else if (currentState == BattleState::PlayerTurn_SwitchSelect) {
                     if (selectedMenuIndex == player->party.size()) {
@@ -241,15 +281,17 @@ void Battle::processEvents(sf::RenderWindow& window) {
                     maxIndex = static_cast<int>(player->party.size()); // To include "Cancel"
                 } else if (currentState == BattleState::PlayerTurn_MoveSelect) {
                     if (player->getActivePokemon()) {
-                        maxIndex = static_cast<int>(player->getActivePokemon()->moves.size()) - 1;
+                        maxIndex = static_cast<int>(player->getActivePokemon()->moves.size());
                     }
+                } else if (currentState == BattleState::PlayerTurn_PotionConfirm) {
+                    maxIndex = 1;
                 } else if (currentState == BattleState::PlayerTurn_Main) {
                     maxIndex = 2; // Fight, Potion, Pokemon
                 }
                 if(selectedMenuIndex > maxIndex) selectedMenuIndex = maxIndex;
             } 
             else if (keyPressed->code == sf::Keyboard::Key::Escape || keyPressed->code == sf::Keyboard::Key::X) {
-                if (currentState == BattleState::PlayerTurn_MoveSelect || currentState == BattleState::PlayerTurn_SwitchSelect) {
+                if (currentState == BattleState::PlayerTurn_MoveSelect || currentState == BattleState::PlayerTurn_SwitchSelect || currentState == BattleState::PlayerTurn_PotionConfirm) {
                     currentState = BattleState::PlayerTurn_Main;
                     selectedMenuIndex = 0;
                 }
@@ -323,12 +365,18 @@ void Battle::render(sf::RenderWindow& window) {
                          (selectedMenuIndex == 0 ? "> " : "  ") + "1. Fight\n" +
                          (selectedMenuIndex == 1 ? "> " : "  ") + "2. Potion (" + std::to_string(player->potions) + " left)\n" +
                          (selectedMenuIndex == 2 ? "> " : "  ") + "3. Pokemon");
+    } else if (currentState == BattleState::PlayerTurn_PotionConfirm) {
+        std::string pName = pMon ? pMon->name : "Pokemon";
+        uiText.setString("Use a Potion on " + pName + "?\n\n" +
+                         (selectedMenuIndex == 0 ? "> " : "  ") + "Yes\n" +
+                         (selectedMenuIndex == 1 ? "> " : "  ") + "No");
     } else if (currentState == BattleState::PlayerTurn_MoveSelect) {
         std::string menu = "Choose Move:\n";
         if (pMon) {
             for (int i = 0; i < pMon->moves.size(); ++i) {
                 menu += (selectedMenuIndex == i ? "> " : "  ") + pMon->moves[i].name + "\n";
             }
+            menu += (selectedMenuIndex == pMon->moves.size() ? "> " : "  ") + std::string("Cancel\n");
         }
         uiText.setString(menu);
     } else if (currentState == BattleState::PlayerTurn_SwitchSelect) {
