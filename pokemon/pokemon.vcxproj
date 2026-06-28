@@ -156,6 +156,8 @@
     <ClCompile Include="src\Battle.cpp" />
     <ClCompile Include="src\GameState.cpp" />
     <ClCompile Include="src\GreedyAgent.cpp" />
+    <ClCompile Include="src\SMABAgent.cpp" />
+    <ClCompile Include="src\MCTSAgent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Types.h" />
@@ -166,6 +168,8 @@
     <ClInclude Include="include\GameState.h" />
     <ClInclude Include="include\Agent.h" />
     <ClInclude Include="include\GreedyAgent.h" />
+    <ClInclude Include="include\SMABAgent.h" />
+    <ClInclude Include="include\MCTSAgent.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
