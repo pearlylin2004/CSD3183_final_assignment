@@ -1,0 +1,7 @@
+{
+  "name": "pokemon-clone",
+  "version": "1.0.0",
+  "dependencies": [
+    "sfml"
+  ]
+}
