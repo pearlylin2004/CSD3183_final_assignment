@@ -56,3 +56,8 @@ bld/
 
 # vcpkg
 vcpkg_installed/
+
+# Allow vendored libraries
+!pokemon/vendor/**
+!pokemon/vendor/**/*.lib
+!pokemon/vendor/**/*.dll
