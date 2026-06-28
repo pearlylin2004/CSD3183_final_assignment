@@ -58,6 +58,11 @@ bld/
 vcpkg_installed/
 
 # Allow vendored libraries
+!pokemon/vendor/
 !pokemon/vendor/**
 !pokemon/vendor/**/*.lib
 !pokemon/vendor/**/*.dll
+!pokemon/vendor/sfml/debug/
+!pokemon/vendor/sfml/debug/**
+!pokemon/vendor/sfml/bin/
+!pokemon/vendor/sfml/bin/**
