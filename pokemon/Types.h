@@ -42,7 +42,7 @@ inline float getTypeEffectiveness(Type attackType, Type defendType) {
     }
     else if (attackType == Type::Psychic) {
         if (defendType == Type::Psychic) return 0.5f;
-        // In gen 1, Psychic has no weaknesses and is super effective against Poison/Fighting (which aren't added yet)
+        // if (defendType == Type::Poison || defendType == Type::Fighting) return 2.0f;
     }
     return 1.0f;
 }
