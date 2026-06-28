@@ -14,5 +14,6 @@ public:
     void healAll();
     bool hasAlivePokemon() const;
     Pokemon* getActivePokemon();
+    const Pokemon* getActivePokemon() const;
     bool switchPokemon(int index);
 };

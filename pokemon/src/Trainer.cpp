@@ -29,6 +29,13 @@ Pokemon* Trainer::getActivePokemon() {
     return nullptr;
 }
 
+const Pokemon* Trainer::getActivePokemon() const {
+    if (!party.empty() && party[0].isAlive()) {
+        return &party[0];
+    }
+    return nullptr;
+}
+
 bool Trainer::switchPokemon(int index) {
     if (index >= 0 && index < party.size() && party[index].isAlive()) {
         if (index == 0) { // Wait, the old code swapped, so active is always at 0

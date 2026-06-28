@@ -9,8 +9,8 @@ enum class BattleState {
     PlayerTurn_MoveSelect,
     PlayerTurn_SwitchSelect,
     PlayerTurn_PotionConfirm,
-    Action_Text, // displaying text like "Charmander used Scratch!"
-    Check_Faint, // check if anyone fainted
+    Action_Text,
+    Check_Faint,
     End // battle over
 };
 

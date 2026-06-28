@@ -128,7 +128,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)vendor\sfml\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)vendor\sfml\include;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
@@ -150,17 +150,22 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="Pokemon.cpp" />
-    <ClCompile Include="Trainer.cpp" />
-    <ClCompile Include="Battle.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Pokemon.cpp" />
+    <ClCompile Include="src\Trainer.cpp" />
+    <ClCompile Include="src\Battle.cpp" />
+    <ClCompile Include="src\GameState.cpp" />
+    <ClCompile Include="src\GreedyAgent.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Types.h" />
-    <ClInclude Include="Move.h" />
-    <ClInclude Include="Pokemon.h" />
-    <ClInclude Include="Trainer.h" />
-    <ClInclude Include="Battle.h" />
+    <ClInclude Include="include\Types.h" />
+    <ClInclude Include="include\Move.h" />
+    <ClInclude Include="include\Pokemon.h" />
+    <ClInclude Include="include\Trainer.h" />
+    <ClInclude Include="include\Battle.h" />
+    <ClInclude Include="include\GameState.h" />
+    <ClInclude Include="include\Agent.h" />
+    <ClInclude Include="include\GreedyAgent.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
