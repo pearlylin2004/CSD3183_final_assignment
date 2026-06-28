@@ -213,7 +213,15 @@ void Battle::processEvents(sf::RenderWindow& window) {
                 } else if (currentState == BattleState::PlayerTurn_Main) {
                     if (selectedMenuIndex == 0) {
                         currentState = BattleState::PlayerTurn_MoveSelect; // Fight
-                        selectedMenuIndex = 0;
+                        Pokemon* pMon = player->getActivePokemon();
+                        if (pMon) {
+                            selectedMenuIndex = pMon->lastMoveIndex;
+                            if (selectedMenuIndex >= pMon->moves.size() && selectedMenuIndex != 5) {
+                                selectedMenuIndex = 0;
+                            }
+                        } else {
+                            selectedMenuIndex = 0;
+                        }
                     } else if (selectedMenuIndex == 1) { // Potion
                         if (player->potions > 0) {
                             currentState = BattleState::PlayerTurn_PotionConfirm;
@@ -243,21 +251,22 @@ void Battle::processEvents(sf::RenderWindow& window) {
                 } else if (currentState == BattleState::PlayerTurn_MoveSelect) {
                     Pokemon* pMon = player->getActivePokemon();
                     if (pMon) {
-                        if (selectedMenuIndex == pMon->moves.size()) {
+                        if (selectedMenuIndex == 5) { // Cancel is index 5
                             currentState = BattleState::PlayerTurn_Main;
                             selectedMenuIndex = 0;
                         } else if (selectedMenuIndex >= 0 && selectedMenuIndex < pMon->moves.size()) {
+                            pMon->lastMoveIndex = selectedMenuIndex;
                             resolveTurn(selectedMenuIndex, false);
                         }
                     }
                 } else if (currentState == BattleState::PlayerTurn_SwitchSelect) {
-                    if (selectedMenuIndex == player->party.size()) {
+                    if (selectedMenuIndex == 7) { // Cancel is index 7
                         // Cancel
                         if (player->getActivePokemon() != nullptr) {
                             currentState = BattleState::PlayerTurn_Main;
                             selectedMenuIndex = 0;
                         }
-                    } else {
+                    } else if (selectedMenuIndex >= 0 && selectedMenuIndex < player->party.size()) {
                         bool wasForcedSwitch = (player->getActivePokemon() == nullptr);
                         if (player->switchPokemon(selectedMenuIndex)) {
                             updateSprites();
@@ -272,23 +281,44 @@ void Battle::processEvents(sf::RenderWindow& window) {
                 }
             } 
             else if (keyPressed->code == sf::Keyboard::Key::Up) {
-                selectedMenuIndex--;
-                if(selectedMenuIndex < 0) selectedMenuIndex = 0;
-            } else if (keyPressed->code == sf::Keyboard::Key::Down) {
-                selectedMenuIndex++;
-                int maxIndex = 3;
-                if (currentState == BattleState::PlayerTurn_SwitchSelect) {
-                    maxIndex = static_cast<int>(player->party.size()); // To include "Cancel"
-                } else if (currentState == BattleState::PlayerTurn_MoveSelect) {
-                    if (player->getActivePokemon()) {
-                        maxIndex = static_cast<int>(player->getActivePokemon()->moves.size());
-                    }
-                } else if (currentState == BattleState::PlayerTurn_PotionConfirm) {
-                    maxIndex = 1;
-                } else if (currentState == BattleState::PlayerTurn_Main) {
-                    maxIndex = 2; // Fight, Potion, Pokemon
+                if (currentState == BattleState::PlayerTurn_MoveSelect || currentState == BattleState::PlayerTurn_SwitchSelect) {
+                    selectedMenuIndex -= 2;
+                } else {
+                    selectedMenuIndex--;
                 }
-                if(selectedMenuIndex > maxIndex) selectedMenuIndex = maxIndex;
+                if (selectedMenuIndex < 0) selectedMenuIndex = 0;
+            } else if (keyPressed->code == sf::Keyboard::Key::Down) {
+                if (currentState == BattleState::PlayerTurn_MoveSelect || currentState == BattleState::PlayerTurn_SwitchSelect) {
+                    selectedMenuIndex += 2;
+                } else {
+                    selectedMenuIndex++;
+                }
+                
+                int maxIndex = 3;
+                if (currentState == BattleState::PlayerTurn_SwitchSelect) maxIndex = 7;
+                else if (currentState == BattleState::PlayerTurn_MoveSelect && player->getActivePokemon()) maxIndex = 5;
+                else if (currentState == BattleState::PlayerTurn_PotionConfirm) maxIndex = 1;
+                else if (currentState == BattleState::PlayerTurn_Main) maxIndex = 2;
+                
+                if (selectedMenuIndex > maxIndex) selectedMenuIndex = maxIndex;
+            }
+            else if (keyPressed->code == sf::Keyboard::Key::Left) {
+                if (currentState == BattleState::PlayerTurn_MoveSelect || currentState == BattleState::PlayerTurn_SwitchSelect) {
+                    if (selectedMenuIndex % 2 != 0) selectedMenuIndex--;
+                }
+            }
+            else if (keyPressed->code == sf::Keyboard::Key::Right) {
+                if (currentState == BattleState::PlayerTurn_MoveSelect || currentState == BattleState::PlayerTurn_SwitchSelect) {
+                    if (selectedMenuIndex % 2 == 0) {
+                        selectedMenuIndex++;
+                        
+                        int maxIndex = 3;
+                        if (currentState == BattleState::PlayerTurn_SwitchSelect) maxIndex = 7;
+                        else if (currentState == BattleState::PlayerTurn_MoveSelect && player->getActivePokemon()) maxIndex = 5;
+                        
+                        if (selectedMenuIndex > maxIndex) selectedMenuIndex = maxIndex;
+                    }
+                }
             } 
             else if (keyPressed->code == sf::Keyboard::Key::Escape || keyPressed->code == sf::Keyboard::Key::X) {
                 if (currentState == BattleState::PlayerTurn_MoveSelect || currentState == BattleState::PlayerTurn_SwitchSelect || currentState == BattleState::PlayerTurn_PotionConfirm) {
@@ -371,24 +401,61 @@ void Battle::render(sf::RenderWindow& window) {
                          (selectedMenuIndex == 0 ? "> " : "  ") + "Yes\n" +
                          (selectedMenuIndex == 1 ? "> " : "  ") + "No");
     } else if (currentState == BattleState::PlayerTurn_MoveSelect) {
-        std::string menu = "Choose Move:\n";
+        uiText.setString("Choose Move:");
+        window.draw(uiText);
+        
         if (pMon) {
-            for (int i = 0; i < pMon->moves.size(); ++i) {
-                menu += (selectedMenuIndex == i ? "> " : "  ") + pMon->moves[i].name + "\n";
+            for (int i = 0; i < 4; ++i) {
+                std::string mName = "-";
+                if (i < pMon->moves.size()) {
+                    mName = pMon->moves[i].name;
+                }
+                sf::Text moveText(font, (selectedMenuIndex == i ? "> " : "  ") + mName, 24);
+                moveText.setFillColor(sf::Color::Black);
+                float x = 30.f + (i % 2) * 350.f;
+                float y = 460.f + (i / 2) * 30.f;
+                moveText.setPosition(sf::Vector2f(x, y));
+                window.draw(moveText);
             }
-            menu += (selectedMenuIndex == pMon->moves.size() ? "> " : "  ") + std::string("Cancel\n");
+            int cancelIdx = 5; // Fixed position at bottom right
+            sf::Text cancelText(font, (selectedMenuIndex == cancelIdx ? "> " : "  ") + std::string("Cancel"), 24);
+            cancelText.setFillColor(sf::Color::Black);
+            float cx = 30.f + (cancelIdx % 2) * 350.f;
+            float cy = 460.f + (cancelIdx / 2) * 30.f;
+            cancelText.setPosition(sf::Vector2f(cx, cy));
+            window.draw(cancelText);
         }
-        uiText.setString(menu);
+        uiText.setString(""); // Clear so it doesn't draw twice
     } else if (currentState == BattleState::PlayerTurn_SwitchSelect) {
-        std::string menu = "Choose Pokemon:\n";
-        for (int i = 0; i < player->party.size(); ++i) {
-            menu += (selectedMenuIndex == i ? "> " : "  ") + player->party[i].name + " (HP: " + std::to_string(player->party[i].current_hp) + ")\n";
+        uiText.setString("Choose Pokemon:");
+        window.draw(uiText);
+        
+        for (int i = 0; i < 6; ++i) {
+            std::string pkmnInfo = "-";
+            if (i < player->party.size()) {
+                pkmnInfo = player->party[i].name + " (" + std::to_string(player->party[i].current_hp) + ")";
+            }
+            sf::Text pkmnText(font, (selectedMenuIndex == i ? "> " : "  ") + pkmnInfo, 24);
+            pkmnText.setFillColor(sf::Color::Black);
+            float x = 30.f + (i % 2) * 350.f;
+            float y = 460.f + (i / 2) * 30.f;
+            pkmnText.setPosition(sf::Vector2f(x, y));
+            window.draw(pkmnText);
         }
-        menu += (selectedMenuIndex == player->party.size() ? "> " : "  ") + std::string("Cancel\n");
-        uiText.setString(menu);
+        int cancelIdx = 7; // Fixed position at bottom right
+        sf::Text cancelText(font, (selectedMenuIndex == cancelIdx ? "> " : "  ") + std::string("Cancel"), 24);
+        cancelText.setFillColor(sf::Color::Black);
+        float cx = 30.f + (cancelIdx % 2) * 350.f;
+        float cy = 460.f + (cancelIdx / 2) * 30.f;
+        cancelText.setPosition(sf::Vector2f(cx, cy));
+        window.draw(cancelText);
+        
+        uiText.setString(""); // Clear so it doesn't draw twice
     }
 
-    window.draw(uiText);
+    if (uiText.getString() != "") {
+        window.draw(uiText);
+    }
     window.display();
 }
 

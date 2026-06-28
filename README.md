@@ -10,27 +10,29 @@ This project evaluates advanced game-theoretic algorithms against a standard Gre
 - **Greedy Baseline**: A deterministic heuristic agent that picks the move with the highest immediate expected damage (factoring in STAB, type effectiveness, and accuracy). 
 
 ## Features
-- Headless, ultra-fast `GameState` engine designed specifically for AI tree-search simulations.
-- Interactive GUI Mode utilizing **SFML** for visualizing agent battles.
-- Automated AI Benchmarking tool (simulates hundreds of battles in milliseconds).
-- Authentic Gen 3 combat engine (Nintendo's stat formula, speed checks, priority items, type effectiveness).
+- **Headless `GameState` Engine**: An ultra-fast simulation environment designed specifically for running deep AI tree-searches efficiently.
+- **Authentic Gen 3 Combat**: Includes Nintendo's stat formula, speed checks, priority items, and a fully updated type effectiveness matrix.
+- **20 Pokemon Roster**: A diverse pool of 20 classic Pokemon (complete with PokeAPI front/back sprites) that automatically construct level-appropriate movesets and naturally cap at 4 moves.
+- **5v5 Team Battles**: Trainers dynamically generate teams of 5 random Pokemon, significantly increasing the game-tree complexity for the AI to navigate.
+- **Interactive GUI**: Utilizes **SFML** to visualize battles featuring an authentic 2x2 grid menu layout.
 
 ## Benchmarking Mode
-When launching the application, you can bypass the GUI and run automated performance metrics:
+When launching the application, you can bypass the GUI and run automated performance metrics. You can run individual matchups or sequence them back-to-back:
 1. **Greedy vs Greedy**
 2. **SMAB vs Greedy**
 3. **MCTS vs Greedy**
+4. **Run All Benchmarks**
 
-The benchmark outputs total wins, draws, and the average computational time per match.
+The benchmark outputs total win percentages, draws, and the average computational time (ms) per match.
 
 ## Controls (GUI Mode)
-- **Up / Down Arrows**: Navigate menus
+- **Left / Right / Up / Down Arrows**: Navigate menus in the 2x2 grid
 - **Z** or **Enter**: Select / Confirm / Advance text
 - **X** or **Escape**: Go back / Cancel
 
 ## Dependencies & Installation
 This project uses **SFML 3** for graphics and window management. The SFML libraries are vendored into the repository for portability, so you do not need `vcpkg`.
 
-1. Open `pokemon/pokemon.slnx` or `pokemon/pokemon.vcxproj` in Visual Studio 2026.
+1. Open `pokemon/pokemon.slnx` or `pokemon/pokemon.vcxproj` in Visual Studio 2022.
 2. Ensure the build configuration is set to `x64` (Debug or Release).
 3. Build and Run the project!

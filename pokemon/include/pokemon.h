@@ -19,6 +19,7 @@ public:
     int defense;
     int speed;
     std::vector<Move> moves;
+    int lastMoveIndex = 0;
 
     struct LearnMove {
         int level;

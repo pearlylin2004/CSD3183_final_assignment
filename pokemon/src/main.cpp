@@ -75,6 +75,69 @@ int main() {
     abra.addLearnMove(10, {"Confusion", Type::Psychic, 50, 100});
     allPokemon.push_back(abra);
 
+    Pokemon caterpie("Caterpie", Type::Bug, Type::None, 45, 30, 35, 45);
+    caterpie.addLearnMove(1, {"Tackle", Type::Normal, 40, 100});
+    caterpie.addLearnMove(1, {"String Shot", Type::Bug, 0, 95, Stat::Speed, -1, false});
+    allPokemon.push_back(caterpie);
+
+    Pokemon weedle("Weedle", Type::Bug, Type::Poison, 40, 35, 30, 50);
+    weedle.addLearnMove(1, {"Poison Sting", Type::Poison, 15, 100});
+    weedle.addLearnMove(1, {"String Shot", Type::Bug, 0, 95, Stat::Speed, -1, false});
+    allPokemon.push_back(weedle);
+
+    Pokemon rattata("Rattata", Type::Normal, Type::None, 30, 56, 35, 72);
+    rattata.addLearnMove(1, {"Tackle", Type::Normal, 40, 100});
+    rattata.addLearnMove(1, {"Tail Whip", Type::Normal, 0, 100, Stat::Defense, -1, false});
+    rattata.addLearnMove(7, {"Quick Attack", Type::Normal, 40, 100});
+    allPokemon.push_back(rattata);
+
+    Pokemon spearow("Spearow", Type::Normal, Type::Flying, 40, 60, 30, 70);
+    spearow.addLearnMove(1, {"Peck", Type::Flying, 35, 100});
+    spearow.addLearnMove(1, {"Growl", Type::Normal, 0, 100, Stat::Attack, -1, false});
+    spearow.addLearnMove(9, {"Pursuit", Type::Dark, 40, 100});
+    allPokemon.push_back(spearow);
+
+    Pokemon ekans("Ekans", Type::Poison, Type::None, 35, 60, 44, 55);
+    ekans.addLearnMove(1, {"Wrap", Type::Normal, 15, 90});
+    ekans.addLearnMove(1, {"Leer", Type::Normal, 0, 100, Stat::Defense, -1, false});
+    ekans.addLearnMove(9, {"Poison Sting", Type::Poison, 15, 100});
+    allPokemon.push_back(ekans);
+
+    Pokemon sandshrew("Sandshrew", Type::Ground, Type::None, 50, 75, 85, 40);
+    sandshrew.addLearnMove(1, {"Scratch", Type::Normal, 40, 100});
+    sandshrew.addLearnMove(6, {"Defense Curl", Type::Normal, 0, 100, Stat::Defense, 1, true});
+    allPokemon.push_back(sandshrew);
+
+    Pokemon nidoranf("Nidoran-f", Type::Poison, Type::None, 55, 47, 52, 41);
+    nidoranf.addLearnMove(1, {"Growl", Type::Normal, 0, 100, Stat::Attack, -1, false});
+    nidoranf.addLearnMove(1, {"Scratch", Type::Normal, 40, 100});
+    allPokemon.push_back(nidoranf);
+
+    Pokemon nidoranm("Nidoran-m", Type::Poison, Type::None, 46, 57, 40, 50);
+    nidoranm.addLearnMove(1, {"Leer", Type::Normal, 0, 100, Stat::Defense, -1, false});
+    nidoranm.addLearnMove(1, {"Peck", Type::Flying, 35, 100});
+    allPokemon.push_back(nidoranm);
+
+    Pokemon clefairy("Clefairy", Type::Fairy, Type::None, 70, 45, 48, 35);
+    clefairy.addLearnMove(1, {"Pound", Type::Normal, 40, 100});
+    clefairy.addLearnMove(1, {"Growl", Type::Normal, 0, 100, Stat::Attack, -1, false});
+    allPokemon.push_back(clefairy);
+
+    Pokemon vulpix("Vulpix", Type::Fire, Type::None, 38, 41, 40, 65);
+    vulpix.addLearnMove(1, {"Ember", Type::Fire, 40, 100});
+    vulpix.addLearnMove(1, {"Tail Whip", Type::Normal, 0, 100, Stat::Defense, -1, false});
+    allPokemon.push_back(vulpix);
+
+    Pokemon jigglypuff("Jigglypuff", Type::Normal, Type::Fairy, 115, 45, 20, 20);
+    jigglypuff.addLearnMove(1, {"Sing", Type::Normal, 0, 55});
+    jigglypuff.addLearnMove(9, {"Pound", Type::Normal, 40, 100});
+    allPokemon.push_back(jigglypuff);
+
+    Pokemon zubat("Zubat", Type::Poison, Type::Flying, 40, 45, 35, 55);
+    zubat.addLearnMove(1, {"Leech Life", Type::Bug, 20, 100});
+    zubat.addLearnMove(6, {"Astonish", Type::Ghost, 30, 100});
+    allPokemon.push_back(zubat);
+
     std::random_device rd;
     std::mt19937 g(rd());
 
@@ -98,6 +161,12 @@ int main() {
         }
 
         if (mode >= 2 && mode <= 5) {
+            int totalMatches = 20;
+            std::cout << "Enter number of matches to simulate: ";
+            if (!(std::cin >> totalMatches)) {
+                break;
+            }
+
             int startMode = (mode == 5) ? 2 : mode;
             int endMode = (mode == 5) ? 4 : mode;
             
@@ -114,8 +183,6 @@ int main() {
                 
                 GreedyAgent agent2; // Player 2 is always Greedy Baseline
                 
-                int totalMatches = 100;
-                
                 std::cout << "\nRunning " << totalMatches << " benchmark matches (" << p1Name << " vs Greedy)..." << std::flush;
                 auto startTime = std::chrono::high_resolution_clock::now();
                 
@@ -123,19 +190,27 @@ int main() {
                     std::vector<Pokemon> pool = allPokemon;
                     std::shuffle(pool.begin(), pool.end(), g);
                     
-                    Trainer player("Player 1", 3);
-                    Trainer rival("Greedy P2", 3);
+                    Trainer player("Player 1", 6);
+                    Trainer rival("Greedy P2", 6);
                     
                     std::uniform_int_distribution<> lvlDist(8, 10);
-                    pool[0].setLevel(lvlDist(g));
-                    pool[1].setLevel(lvlDist(g));
-                    pool[2].setLevel(lvlDist(g));
-                    pool[3].setLevel(lvlDist(g));
+                    for (int p = 0; p < 12; ++p) {
+                        pool[p].setLevel(lvlDist(g));
+                    }
                     
                     player.addPokemon(pool[0]);
                     player.addPokemon(pool[1]);
-                    rival.addPokemon(pool[2]);
-                    rival.addPokemon(pool[3]);
+                    player.addPokemon(pool[2]);
+                    player.addPokemon(pool[3]);
+                    player.addPokemon(pool[4]);
+                    player.addPokemon(pool[5]);
+
+                    rival.addPokemon(pool[6]);
+                    rival.addPokemon(pool[7]);
+                    rival.addPokemon(pool[8]);
+                    rival.addPokemon(pool[9]);
+                    rival.addPokemon(pool[10]);
+                    rival.addPokemon(pool[11]);
                     
                     GameState state(player, rival);
                     
@@ -176,8 +251,8 @@ int main() {
             sf::RenderWindow window(sf::VideoMode({800, 600}), "Pokemon Battle GUI Test");
             window.setFramerateLimit(60);
 
-            Trainer player("Red", 3);
-            Trainer rival("Blue", 3);
+            Trainer player("Red", 6);
+            Trainer rival("Blue", 6);
 
             while (window.isOpen()) {
                 std::vector<Pokemon> pool = allPokemon;
@@ -187,16 +262,23 @@ int main() {
                 rival.party.clear();
 
                 std::uniform_int_distribution<> lvlDist(8, 10);
-                pool[0].setLevel(lvlDist(g));
-                pool[1].setLevel(lvlDist(g));
-                pool[2].setLevel(lvlDist(g));
-                pool[3].setLevel(lvlDist(g));
+                for (int p = 0; p < 12; ++p) {
+                    pool[p].setLevel(lvlDist(g));
+                }
 
                 player.addPokemon(pool[0]);
                 player.addPokemon(pool[1]);
+                player.addPokemon(pool[2]);
+                player.addPokemon(pool[3]);
+                player.addPokemon(pool[4]);
+                player.addPokemon(pool[5]);
 
-                rival.addPokemon(pool[2]);
-                rival.addPokemon(pool[3]);
+                rival.addPokemon(pool[6]);
+                rival.addPokemon(pool[7]);
+                rival.addPokemon(pool[8]);
+                rival.addPokemon(pool[9]);
+                rival.addPokemon(pool[10]);
+                rival.addPokemon(pool[11]);
 
                 player.healAll();
                 rival.healAll();

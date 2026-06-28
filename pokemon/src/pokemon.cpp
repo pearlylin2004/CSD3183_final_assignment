@@ -26,9 +26,10 @@ void Pokemon::setLevel(int newLevel) {
     moves.clear();
     for (const auto& lm : learnset) {
         if (lm.level <= level) {
-            if (moves.size() < 4) {
-                moves.push_back(lm.move);
+            if (moves.size() == 4) {
+                moves.erase(moves.begin());
             }
+            moves.push_back(lm.move);
         }
     }
 }
@@ -36,15 +37,19 @@ void Pokemon::setLevel(int newLevel) {
 void Pokemon::addLearnMove(int lvl, Move m) {
     learnset.push_back({lvl, m});
     // Re-apply in case level is already set
-    if (lvl <= level && moves.size() < 4) {
+    if (lvl <= level) {
+        if (moves.size() == 4) {
+            moves.erase(moves.begin());
+        }
         moves.push_back(m);
     }
 }
 
 void Pokemon::addMove(Move m) {
-    if (moves.size() < 4) {
-        moves.push_back(m);
+    if (moves.size() == 4) {
+        moves.erase(moves.begin());
     }
+    moves.push_back(m);
 }
 
 bool Pokemon::isAlive() const {
