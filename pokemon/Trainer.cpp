@@ -23,8 +23,8 @@ void Trainer::healAll() {
 }
 
 Pokemon* Trainer::getActivePokemon() {
-    for (auto& p : party) {
-        if (p.isAlive()) return &p;
+    if (!party.empty() && party[0].isAlive()) {
+        return &party[0];
     }
     return nullptr;
 }

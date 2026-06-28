@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <functional>
+#include <optional>
 #include "Trainer.h"
 
 enum class BattleState {
@@ -33,6 +34,15 @@ private:
     sf::RectangleShape pHealthBar;
     sf::RectangleShape eHealthBarBg;
     sf::RectangleShape eHealthBar;
+    
+    // Sprites
+    sf::Texture playerTexture;
+    std::optional<sf::Sprite> playerSprite;
+    sf::Texture enemyTexture;
+    std::optional<sf::Sprite> enemySprite;
+
+    // Helpers
+    void updateSprites();
     
     void processEvents(sf::RenderWindow& window);
     void update();

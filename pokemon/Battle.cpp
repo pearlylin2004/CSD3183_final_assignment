@@ -29,6 +29,7 @@ Battle::Battle(Trainer* p, Trainer* e) : player(p), enemy(e), currentState(Battl
 
     pushEvent("Trainer " + enemy->name + " challenges you!\nGo! " + player->getActivePokemon()->name + "!");
     updateHealthBars();
+    updateSprites();
 }
 
 void Battle::pushEvent(const std::string& msg, std::function<void()> action) {
@@ -57,7 +58,7 @@ void Battle::resolveTurn(int playerMoveIndex, bool usedItemOrSwitched, int pHeal
     int enemyMoveIndex = std::rand() % static_cast<int>(eMon->moves.size());
     bool enemyUsedPotion = false;
     
-    // Enemy AI: 50% chance to use a potion if HP <= 30%
+    // Enemy trainer 50% chance to use a potion if HP <= 30%
     if (enemy->potions > 0 && eSimHp <= eMon->max_hp * 0.3f && (std::rand() % 100 < 50)) {
         enemyUsedPotion = true;
     }
@@ -131,7 +132,7 @@ void Battle::resolveTurn(int playerMoveIndex, bool usedItemOrSwitched, int pHeal
     
     currentState = BattleState::Action_Text;
     
-    // Execute the first event's action immediately so it matches the text on screen
+    // Execute the first events action immediately so it matches the text on screen
     if (!eventQueue.empty() && eventQueue.front().action) {
         eventQueue.front().action();
         eventQueue.front().action = nullptr; // prevent double execution
@@ -159,7 +160,25 @@ void Battle::processEvents(sf::RenderWindow& window) {
                     if (eventQueue.empty()) {
                         if (currentState == BattleState::End) {
                             isFinished = true;
-                        } else if (player->hasAlivePokemon() && enemy->hasAlivePokemon()) {
+                        } else if (!player->hasAlivePokemon()) {
+                            pushEvent("You blacked out!\n\nPress Z or Enter to restart");
+                            currentState = BattleState::End;
+                        } else if (!enemy->hasAlivePokemon()) {
+                            pushEvent("You won!\n\nPress Z or Enter to restart");
+                            currentState = BattleState::End;
+                        } else if (!player->getActivePokemon()) {
+                            currentState = BattleState::PlayerTurn_SwitchSelect;
+                        } else if (!enemy->getActivePokemon()) {
+                            for (int i = 0; i < enemy->party.size(); ++i) {
+                                if (enemy->party[i].isAlive()) {
+                                    enemy->switchPokemon(i);
+                                    updateSprites();
+                                    pushEvent("Trainer " + enemy->name + " sent out " + enemy->getActivePokemon()->name + "!");
+                                    currentState = BattleState::Action_Text;
+                                    break;
+                                }
+                            }
+                        } else {
                             currentState = BattleState::PlayerTurn_Main;
                             selectedMenuIndex = 0;
                         }
@@ -170,14 +189,16 @@ void Battle::processEvents(sf::RenderWindow& window) {
                         selectedMenuIndex = 0;
                     } else if (selectedMenuIndex == 1) { // Potion
                         if (player->potions > 0) {
-                            player->potions--;
                             Pokemon* pMon = player->getActivePokemon();
-                            int healed = std::min(20, pMon->max_hp - pMon->current_hp);
-                            
-                            pushEvent("You used a Potion!\n" + pMon->name + " recovered " + std::to_string(healed) + " HP!", [pMon]() {
-                                pMon->heal(20);
-                            });
-                            resolveTurn(-1, true, healed);
+                            if (pMon) {
+                                player->potions--;
+                                int healed = std::min(20, pMon->max_hp - pMon->current_hp);
+                                
+                                pushEvent("You used a Potion!\n" + pMon->name + " recovered " + std::to_string(healed) + " HP!", [pMon]() {
+                                    pMon->heal(20);
+                                });
+                                resolveTurn(-1, true, healed);
+                            }
                             selectedMenuIndex = 0;
                         }
                     } else if (selectedMenuIndex == 2) {
@@ -192,11 +213,21 @@ void Battle::processEvents(sf::RenderWindow& window) {
                 } else if (currentState == BattleState::PlayerTurn_SwitchSelect) {
                     if (selectedMenuIndex == player->party.size()) {
                         // Cancel
-                        currentState = BattleState::PlayerTurn_Main;
-                        selectedMenuIndex = 0;
-                    } else if (player->switchPokemon(selectedMenuIndex)) {
-                        pushEvent("You sent out " + player->getActivePokemon()->name + "!");
-                        resolveTurn(-1, true);
+                        if (player->getActivePokemon() != nullptr) {
+                            currentState = BattleState::PlayerTurn_Main;
+                            selectedMenuIndex = 0;
+                        }
+                    } else {
+                        bool wasForcedSwitch = (player->getActivePokemon() == nullptr);
+                        if (player->switchPokemon(selectedMenuIndex)) {
+                            updateSprites();
+                            pushEvent("You sent out " + player->getActivePokemon()->name + "!");
+                            if (wasForcedSwitch) {
+                                currentState = BattleState::Action_Text;
+                            } else {
+                                resolveTurn(-1, true);
+                            }
+                        }
                     }
                 }
             } 
@@ -229,36 +260,6 @@ void Battle::processEvents(sf::RenderWindow& window) {
 
 void Battle::update() {
     updateHealthBars();
-
-    if (currentState == BattleState::Action_Text && eventQueue.empty()) {
-        if (!player->hasAlivePokemon()) {
-            pushEvent("You blacked out!\n\nPress Z or Enter to restart");
-            currentState = BattleState::End;
-        } else if (!enemy->hasAlivePokemon()) {
-            pushEvent("You won!\n\nPress Z or Enter to restart");
-            currentState = BattleState::End;
-        } else if (!player->getActivePokemon()) {
-            // Player's active pokemon died, force switch
-            currentState = BattleState::PlayerTurn_SwitchSelect;
-        } else if (!enemy->getActivePokemon()) {
-            // Enemy's active pokemon died, auto switch (for now it just picks the next alive)
-            for (int i = 0; i < enemy->party.size(); ++i) {
-                if (enemy->party[i].isAlive()) {
-                    enemy->switchPokemon(i);
-                    pushEvent("Trainer " + enemy->name + " sent out " + enemy->getActivePokemon()->name + "!");
-                    currentState = BattleState::Action_Text;
-                    
-                    // Execute immediately so it displays
-                    if (!eventQueue.empty() && eventQueue.front().action) {
-                        eventQueue.front().action();
-                        eventQueue.front().action = nullptr;
-                    }
-                    
-                    break;
-                }
-            }
-        }
-    }
 }
 
 void Battle::updateHealthBars() {
@@ -287,11 +288,9 @@ void Battle::render(sf::RenderWindow& window) {
         window.draw(eHealthBarBg);
         window.draw(eHealthBar);
 
-        // Placeholder for Enemy Sprite (Top-Right)
-        sf::Text eSpriteText(font, "[ " + eMon->name + " Sprite ]", 28);
-        eSpriteText.setFillColor(sf::Color(100, 100, 100)); // Dark grey
-        eSpriteText.setPosition(sf::Vector2f(500.f, 80.f));
-        window.draw(eSpriteText);
+        if (enemySprite) {
+            window.draw(*enemySprite);
+        }
     }
 
     Pokemon* pMon = player->getActivePokemon();
@@ -303,11 +302,9 @@ void Battle::render(sf::RenderWindow& window) {
         window.draw(pHealthBarBg);
         window.draw(pHealthBar);
 
-        // Placeholder for Player Sprite (Bottom-Left)
-        sf::Text pSpriteText(font, "[ " + pMon->name + " Sprite (Back) ]", 28);
-        pSpriteText.setFillColor(sf::Color(100, 100, 100)); // Dark grey
-        pSpriteText.setPosition(sf::Vector2f(80.f, 250.f));
-        window.draw(pSpriteText);
+        if (playerSprite) {
+            window.draw(*playerSprite);
+        }
     }
 
     window.draw(bottomPanel);
@@ -321,7 +318,8 @@ void Battle::render(sf::RenderWindow& window) {
             uiText.setString(eventQueue.front().message);
         }
     } else if (currentState == BattleState::PlayerTurn_Main) {
-        uiText.setString("What will " + pMon->name + " do?\n\n" +
+        std::string pName = pMon ? pMon->name : "Pokemon";
+        uiText.setString("What will " + pName + " do?\n\n" +
                          (selectedMenuIndex == 0 ? "> " : "  ") + "1. Fight\n" +
                          (selectedMenuIndex == 1 ? "> " : "  ") + "2. Potion (" + std::to_string(player->potions) + " left)\n" +
                          (selectedMenuIndex == 2 ? "> " : "  ") + "3. Pokemon");
@@ -344,4 +342,28 @@ void Battle::render(sf::RenderWindow& window) {
 
     window.draw(uiText);
     window.display();
+}
+
+void Battle::updateSprites() {
+    Pokemon* pMon = player->getActivePokemon();
+    if (pMon) {
+        std::string pName = pMon->name;
+        std::transform(pName.begin(), pName.end(), pName.begin(), ::tolower);
+        if (playerTexture.loadFromFile("assets/back/" + pName + ".png")) {
+            playerSprite = sf::Sprite(playerTexture);
+            playerSprite->setScale(sf::Vector2f(3.f, 3.f));
+            playerSprite->setPosition(sf::Vector2f(100.f, 150.f));
+        }
+    }
+
+    Pokemon* eMon = enemy->getActivePokemon();
+    if (eMon) {
+        std::string eName = eMon->name;
+        std::transform(eName.begin(), eName.end(), eName.begin(), ::tolower);
+        if (enemyTexture.loadFromFile("assets/front/" + eName + ".png")) {
+            enemySprite = sf::Sprite(enemyTexture);
+            enemySprite->setScale(sf::Vector2f(2.5f, 2.5f));
+            enemySprite->setPosition(sf::Vector2f(500.f, 30.f));
+        }
+    }
 }
