@@ -56,11 +56,9 @@ int GameState::step(Action p1Action, Action p2Action) {
     Pokemon* p1Mon = player1.getActivePokemon();
     Pokemon* p2Mon = player2.getActivePokemon();
     
-    // In force switch scenario
     if (!p1Mon && p1Action.type != ActionType::SWITCH) return 0;
     if (!p2Mon && p2Action.type != ActionType::SWITCH) return 0;
 
-    // 1. Handle switches first (Switching has highest priority)
     if (p1Action.type == ActionType::SWITCH) {
         player1.switchPokemon(p1Action.index);
         p1Mon = player1.getActivePokemon();
@@ -73,7 +71,6 @@ int GameState::step(Action p1Action, Action p2Action) {
     int p1SimHp = p1Mon->current_hp;
     int p2SimHp = p2Mon->current_hp;
 
-    // 2. Handle potions (Items have next priority)
     if (p1Action.type == ActionType::POTION) {
         simulatePotionHeadless(player1, p1Mon, p1SimHp);
     }
@@ -81,7 +78,6 @@ int GameState::step(Action p1Action, Action p2Action) {
         simulatePotionHeadless(player2, p2Mon, p2SimHp);
     }
 
-    // 3. Handle moves based on speed
     bool p1UsedMove = (p1Action.type == ActionType::MOVE);
     bool p2UsedMove = (p2Action.type == ActionType::MOVE);
     
@@ -108,11 +104,10 @@ int GameState::step(Action p1Action, Action p2Action) {
         simulateMoveHeadless(p2Mon, p1Mon, p2Mon->moves[p2Action.index], p1SimHp, missed);
     }
 
-    // 4. Check win conditions
     if (!player1.hasAlivePokemon()) return 2;
     if (!player2.hasAlivePokemon()) return 1;
 
-    return 0; // ongoing
+    return 0;
 }
 
 float GameState::evaluate(int perspectivePlayerId) const {
@@ -121,7 +116,6 @@ float GameState::evaluate(int perspectivePlayerId) const {
     
     float score = 0.0f;
 
-    // 1. HP Differential (Massive weight)
     float allyHpPerc = 0.0f;
     for (const auto& mon : ally.party) {
         if (mon.max_hp > 0) allyHpPerc += (float)mon.current_hp / mon.max_hp;
@@ -132,9 +126,8 @@ float GameState::evaluate(int perspectivePlayerId) const {
         if (mon.max_hp > 0) enemyHpPerc += (float)mon.current_hp / mon.max_hp;
     }
     
-    score += (allyHpPerc - enemyHpPerc) * 100.0f; // Scale to 100 points per full pokemon HP bar
+    score += (allyHpPerc - enemyHpPerc) * 100.0f;
 
-    // 2. Stat Modifiers
     const Pokemon* allyActive = ally.getActivePokemon();
     if (allyActive) {
         score += allyActive->attack_stage * 10.0f;
@@ -152,10 +145,8 @@ float GameState::evaluate(int perspectivePlayerId) const {
         score -= enemyActive->accuracy_stage * 5.0f;
         score -= enemyActive->evasion_stage * 5.0f;
         
-        // 3. Type coverage heuristic (Offensive advantage)
         if (allyActive) {
             float bestEffectiveness = 0.0f;
-            // Does ally have a move that is super effective?
             for (const auto& move : allyActive->moves) {
                 if (move.power > 0) {
                     float eff = getTypeEffectiveness(move.type, enemyActive->type1) * getTypeEffectiveness(move.type, enemyActive->type2);
@@ -167,7 +158,6 @@ float GameState::evaluate(int perspectivePlayerId) const {
         }
     }
 
-    // 4. Potions remaining
     score += (ally.potions - enemy.potions) * 15.0f;
 
     return score;

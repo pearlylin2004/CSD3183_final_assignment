@@ -1,3 +1,7 @@
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <iostream>
@@ -19,6 +23,8 @@
 #include "MCTSAgent.h"
 
 int main() {
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
     std::srand(static_cast<unsigned int>(std::time(0)));
 
     std::vector<Pokemon> allPokemon;
@@ -148,106 +154,23 @@ int main() {
         std::cout << "3. Run AI Benchmark (SMAB vs Greedy)\n";
         std::cout << "4. Run AI Benchmark (MCTS vs Greedy)\n";
         std::cout << "5. Run All Benchmarks\n";
-        std::cout << "6. Exit\n";
-        std::cout << "Select mode (1-6): ";
+        std::cout << "6. Run AI Benchmark with GUI (Greedy vs Greedy)\n";
+        std::cout << "7. Run AI Benchmark with GUI (SMAB vs Greedy)\n";
+        std::cout << "8. Run AI Benchmark with GUI (MCTS vs Greedy)\n";
+        std::cout << "9. Run All Benchmarks with GUI\n";
+        std::cout << "10. Exit\n";
+        std::cout << "Select mode (1-10): ";
         
         int mode = 0;
         if (!(std::cin >> mode)) {
             break;
         }
 
-        if (mode == 6) {
+        if (mode == 10) {
             break;
         }
-
-        if (mode >= 2 && mode <= 5) {
-            int totalMatches = 20;
-            std::cout << "Enter number of matches to simulate: ";
-            if (!(std::cin >> totalMatches)) {
-                break;
-            }
-
-            int startMode = (mode == 5) ? 2 : mode;
-            int endMode = (mode == 5) ? 4 : mode;
-            
-            for (int currentMode = startMode; currentMode <= endMode; ++currentMode) {
-                int p1Wins = 0;
-                int p2Wins = 0;
-                int draws = 0;
-                
-                Agent* agent1 = nullptr;
-                std::string p1Name = "";
-                if (currentMode == 2) { agent1 = new GreedyAgent(); p1Name = "Greedy"; }
-                else if (currentMode == 3) { agent1 = new SMABAgent(2); p1Name = "SMAB"; }
-                else if (currentMode == 4) { agent1 = new MCTSAgent(100); p1Name = "MCTS"; }
-                
-                GreedyAgent agent2; // Player 2 is always Greedy Baseline
-                
-                std::cout << "\nRunning " << totalMatches << " benchmark matches (" << p1Name << " vs Greedy)..." << std::flush;
-                auto startTime = std::chrono::high_resolution_clock::now();
-                
-                for (int i = 0; i < totalMatches; ++i) {
-                    std::vector<Pokemon> pool = allPokemon;
-                    std::shuffle(pool.begin(), pool.end(), g);
-                    
-                    Trainer player("Player 1", 6);
-                    Trainer rival("Greedy P2", 6);
-                    
-                    std::uniform_int_distribution<> lvlDist(8, 10);
-                    for (int p = 0; p < 12; ++p) {
-                        pool[p].setLevel(lvlDist(g));
-                    }
-                    
-                    player.addPokemon(pool[0]);
-                    player.addPokemon(pool[1]);
-                    player.addPokemon(pool[2]);
-                    player.addPokemon(pool[3]);
-                    player.addPokemon(pool[4]);
-                    player.addPokemon(pool[5]);
-
-                    rival.addPokemon(pool[6]);
-                    rival.addPokemon(pool[7]);
-                    rival.addPokemon(pool[8]);
-                    rival.addPokemon(pool[9]);
-                    rival.addPokemon(pool[10]);
-                    rival.addPokemon(pool[11]);
-                    
-                    GameState state(player, rival);
-                    
-                    int turns = 0;
-                    int result = 0;
-                    while (result == 0 && turns < 100) {
-                        Action a1 = agent1->getAction(state, 1);
-                        Action a2 = agent2.getAction(state, 2);
-                        result = state.step(a1, a2);
-                        turns++;
-                    }
-                    
-                    if (result == 1) p1Wins++;
-                    else if (result == 2) p2Wins++;
-                    else draws++;
-                    
-                    const char spinner[] = {'|', '/', '-', '\\'};
-                    std::cout << "\rRunning " << totalMatches << " benchmark matches (" << p1Name << " vs Greedy)... " << spinner[i % 4] << std::flush;
-                }
-                
-                auto endTime = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double, std::milli> elapsed = endTime - startTime;
-                
-                std::cout << "\rRunning " << totalMatches << " benchmark matches (" << p1Name << " vs Greedy)... Done!\n";
-                std::cout << "=== BENCHMARK RESULTS (" << p1Name << " vs Greedy) ===\n";
-                std::cout << "Total Matches: " << totalMatches << "\n";
-                std::cout << "Player 1 (" << p1Name << ") Wins: " << p1Wins << " (" << (static_cast<float>(p1Wins) / totalMatches * 100.0f) << "%)\n";
-                std::cout << "Player 2 (Greedy) Wins: " << p2Wins << " (" << (static_cast<float>(p2Wins) / totalMatches * 100.0f) << "%)\n";
-                std::cout << "Draws (Timeout): " << draws << "\n";
-                std::cout << "Total Simulation Time: " << elapsed.count() << " ms\n";
-                std::cout << "Average Time Per Match: " << (elapsed.count() / totalMatches) << " ms\n";
-                std::cout << "=========================================\n";
-                
-                delete agent1;
-            }
-            
-        } else if (mode == 1) {
+        
+        if (mode == 1) {
             sf::RenderWindow window(sf::VideoMode({800, 600}), "Pokemon Battle GUI Test");
             window.setFramerateLimit(60);
 
@@ -266,24 +189,203 @@ int main() {
                     pool[p].setLevel(lvlDist(g));
                 }
 
-                player.addPokemon(pool[0]);
-                player.addPokemon(pool[1]);
-                player.addPokemon(pool[2]);
-                player.addPokemon(pool[3]);
-                player.addPokemon(pool[4]);
-                player.addPokemon(pool[5]);
-
-                rival.addPokemon(pool[6]);
-                rival.addPokemon(pool[7]);
-                rival.addPokemon(pool[8]);
-                rival.addPokemon(pool[9]);
-                rival.addPokemon(pool[10]);
-                rival.addPokemon(pool[11]);
+                player.addPokemon(pool[0]); player.addPokemon(pool[1]); player.addPokemon(pool[2]); player.addPokemon(pool[3]); player.addPokemon(pool[4]); player.addPokemon(pool[5]);
+                rival.addPokemon(pool[6]); rival.addPokemon(pool[7]); rival.addPokemon(pool[8]); rival.addPokemon(pool[9]); rival.addPokemon(pool[10]); rival.addPokemon(pool[11]);
 
                 player.healAll();
                 rival.healAll();
                 Battle battle(&player, &rival);
                 battle.run(window);
+            }
+        } else if ((mode >= 2 && mode <= 5) || (mode >= 6 && mode <= 9)) {
+            bool useGUI = (mode >= 6 && mode <= 9);
+            
+            int totalMatches = useGUI ? 5 : 20;
+            std::cout << "Enter number of matches to simulate: ";
+            if (!(std::cin >> totalMatches)) break;
+            
+            sf::RenderWindow* windowPtr = nullptr;
+            sf::Font font;
+            sf::Texture playerTexture;
+            sf::Texture enemyTexture;
+            std::optional<sf::Sprite> playerSprite;
+            std::optional<sf::Sprite> enemySprite;
+            std::string lastP1Name = "";
+            std::string lastP2Name = "";
+            
+            if (useGUI) {
+                windowPtr = new sf::RenderWindow(sf::VideoMode({800, 600}), "Pokemon AI Sped-up GUI Benchmark");
+                windowPtr->setFramerateLimit(60);
+                if (!font.openFromFile("assets/arial.ttf"))
+                    std::cout << "Failed to load font!\n";
+            }
+
+            int baseMode = (mode >= 6) ? (mode - 4) : mode;
+            int startMode = (baseMode == 5) ? 2 : baseMode;
+            int endMode = (baseMode == 5) ? 4 : baseMode;
+
+            for (int currentMode = startMode; currentMode <= endMode; ++currentMode) {
+                if (useGUI && !windowPtr->isOpen()) break;
+                
+                int p1Wins = 0, p2Wins = 0, draws = 0;
+                
+                Agent* agent1 = nullptr;
+                std::string p1Name = "";
+                if (currentMode == 2) { agent1 = new GreedyAgent(); p1Name = "Greedy"; }
+                else if (currentMode == 3) { agent1 = new SMABAgent(2); p1Name = "SMAB"; }
+                else if (currentMode == 4) { agent1 = new MCTSAgent(100); p1Name = "MCTS"; }
+                
+                GreedyAgent agent2; 
+                
+                if (!useGUI)
+                    std::cout << "\nRunning " << totalMatches << " benchmark matches (" << p1Name << " vs Greedy)..." << std::flush;
+
+                auto startTime = std::chrono::high_resolution_clock::now();
+                
+                for (int i = 0; i < totalMatches; ++i) {
+                    if (useGUI && !windowPtr->isOpen()) break;
+                    
+                    std::vector<Pokemon> pool = allPokemon;
+                    std::shuffle(pool.begin(), pool.end(), g);
+                    
+                    Trainer player(p1Name, 6);
+                    Trainer rival("Greedy", 6);
+                    
+                    std::uniform_int_distribution<> lvlDist(8, 10);
+                    for (int p = 0; p < 12; ++p) pool[p].setLevel(lvlDist(g));
+                    
+                    player.addPokemon(pool[0]); player.addPokemon(pool[1]); player.addPokemon(pool[2]); player.addPokemon(pool[3]); player.addPokemon(pool[4]); player.addPokemon(pool[5]);
+                    rival.addPokemon(pool[6]); rival.addPokemon(pool[7]); rival.addPokemon(pool[8]); rival.addPokemon(pool[9]); rival.addPokemon(pool[10]); rival.addPokemon(pool[11]);
+                    
+                    GameState state(player, rival);
+                    int turns = 0, result = 0;
+                    std::string actionLog = "Battle Start!";
+                    
+                    while (result == 0 && turns < 100) {
+                        if (useGUI) {
+                            if (!windowPtr->isOpen()) break;
+                            while (const std::optional<sf::Event> event = windowPtr->pollEvent())
+                                if (event->is<sf::Event::Closed>()) 
+                                    windowPtr->close();
+                        }
+                        
+                        Action a1 = agent1->getAction(state, 1);
+                        Action a2 = agent2.getAction(state, 2);
+                        
+                        if (useGUI) {
+                            Pokemon* oldP1 = state.player1.getActivePokemon();
+                            Pokemon* oldP2 = state.player2.getActivePokemon();
+                            actionLog = "";
+                            if (a1.type == ActionType::MOVE && oldP1) actionLog += oldP1->name + " used " + oldP1->moves[a1.index].name + "!\n";
+                            else if (a1.type == ActionType::SWITCH) actionLog += p1Name + " switched to " + state.player1.party[a1.index].name + "!\n";
+                            else if (a1.type == ActionType::POTION) actionLog += p1Name + " used a Potion!\n";
+                            
+                            if (a2.type == ActionType::MOVE && oldP2) actionLog += oldP2->name + " used " + oldP2->moves[a2.index].name + "!\n";
+                            else if (a2.type == ActionType::SWITCH) actionLog += "Greedy switched to " + state.player2.party[a2.index].name + "!\n";
+                            else if (a2.type == ActionType::POTION) actionLog += "Greedy used a Potion!\n";
+                            
+                            if (actionLog.empty()) actionLog = "Waiting for next turn...";
+                        }
+                        
+                        result = state.step(a1, a2);
+                        turns++;
+                        
+                        if (useGUI) {
+                            windowPtr->clear(sf::Color(240, 240, 240));
+                            Pokemon* p1Mon = state.player1.getActivePokemon();
+                            Pokemon* p2Mon = state.player2.getActivePokemon();
+                            
+                            if (p2Mon) {
+                                std::string eName = p2Mon->name;
+                                std::transform(eName.begin(), eName.end(), eName.begin(), ::tolower);
+                                if (eName != lastP2Name) {
+                                    if (enemyTexture.loadFromFile("assets/front/" + eName + ".png")) {
+                                        enemySprite = sf::Sprite(enemyTexture);
+                                        enemySprite->setScale(sf::Vector2f(2.5f, 2.5f));
+                                        enemySprite->setPosition(sf::Vector2f(500.f, 30.f));
+                                    }
+                                    lastP2Name = eName;
+                                }
+                                if (lastP2Name != "" && enemySprite) windowPtr->draw(*enemySprite);
+                                
+                                sf::Text eText(font, p2Mon->name + "  Lvl " + std::to_string(p2Mon->level), 24);
+                                eText.setFillColor(sf::Color::Black); eText.setPosition(sf::Vector2f(50.f, 50.f)); windowPtr->draw(eText);
+                                sf::RectangleShape eBarBg(sf::Vector2f(200.f, 15.f)); eBarBg.setFillColor(sf::Color::Red); eBarBg.setPosition(sf::Vector2f(50.f, 90.f));
+                                float eRatio = std::max(0.0f, (float)p2Mon->current_hp / p2Mon->max_hp);
+                                sf::RectangleShape eBar(sf::Vector2f(200.f * eRatio, 15.f)); eBar.setFillColor(sf::Color::Green); eBar.setPosition(sf::Vector2f(50.f, 90.f));
+                                windowPtr->draw(eBarBg); windowPtr->draw(eBar);
+                            }
+                            
+                            if (p1Mon) {
+                                std::string pName = p1Mon->name;
+                                std::transform(pName.begin(), pName.end(), pName.begin(), ::tolower);
+                                if (pName != lastP1Name) {
+                                    if (playerTexture.loadFromFile("assets/back/" + pName + ".png")) {
+                                        playerSprite = sf::Sprite(playerTexture);
+                                        playerSprite->setScale(sf::Vector2f(3.f, 3.f));
+                                        playerSprite->setPosition(sf::Vector2f(100.f, 150.f));
+                                    }
+                                    lastP1Name = pName;
+                                }
+                                if (lastP1Name != "" && playerSprite) windowPtr->draw(*playerSprite);
+                                
+                                sf::Text pText(font, p1Mon->name + "  Lvl " + std::to_string(p1Mon->level) + "\nHP: " + std::to_string(p1Mon->current_hp) + "/" + std::to_string(p1Mon->max_hp), 24);
+                                pText.setFillColor(sf::Color::Black); pText.setPosition(sf::Vector2f(500.f, 280.f)); windowPtr->draw(pText);
+                                sf::RectangleShape pBarBg(sf::Vector2f(200.f, 15.f)); pBarBg.setFillColor(sf::Color::Red); pBarBg.setPosition(sf::Vector2f(500.f, 350.f));
+                                float pRatio = std::max(0.0f, (float)p1Mon->current_hp / p1Mon->max_hp);
+                                sf::RectangleShape pBar(sf::Vector2f(200.f * pRatio, 15.f)); pBar.setFillColor(sf::Color::Green); pBar.setPosition(sf::Vector2f(500.f, 350.f));
+                                windowPtr->draw(pBarBg); windowPtr->draw(pBar);
+                            }
+                            
+                            sf::RectangleShape bottomPanel;
+                            bottomPanel.setSize(sf::Vector2f(780.f, 180.f)); bottomPanel.setPosition(sf::Vector2f(10.f, 400.f));
+                            bottomPanel.setFillColor(sf::Color::White); bottomPanel.setOutlineColor(sf::Color::Black); bottomPanel.setOutlineThickness(5.f);
+                            windowPtr->draw(bottomPanel);
+                            
+                            sf::Text actionText(font, actionLog, 24); actionText.setFillColor(sf::Color::Black); actionText.setPosition(sf::Vector2f(30.f, 420.f));
+                            windowPtr->draw(actionText);
+                            
+                            sf::Text infoText(font, "Match " + std::to_string(i + 1) + "/" + std::to_string(totalMatches) + " | Turn: " + std::to_string(turns) + " | " + p1Name + " vs Greedy", 20);
+                            infoText.setFillColor(sf::Color::Black); infoText.setPosition(sf::Vector2f(10.f, 10.f));
+                            windowPtr->draw(infoText);
+                            
+                            windowPtr->display();
+                            sf::sleep(sf::milliseconds(50));
+                        }
+                    }
+                    
+                    if (result == 1) p1Wins++; else if (result == 2) p2Wins++; else draws++;
+                    
+                    if (!useGUI) {
+                        const char spinner[] = {'|', '/', '-', '\\'};
+                        std::cout << "\rRunning " << totalMatches << " benchmark matches (" << p1Name << " vs Greedy)... " << spinner[i % 4] << std::flush;
+                    }
+                }
+                
+                auto endTime = std::chrono::high_resolution_clock::now();
+                std::chrono::duration<double, std::milli> elapsed = endTime - startTime;
+                
+                if (useGUI)
+                    std::cout << "\n=== SPED-UP GUI BENCHMARK RESULTS (" << p1Name << " vs Greedy) ===\n";
+                else {
+                    std::cout << "\rRunning " << totalMatches << " benchmark matches (" << p1Name << " vs Greedy)... Done!\n";
+                    std::cout << "=== BENCHMARK RESULTS (" << p1Name << " vs Greedy) ===\n";
+                }
+                std::cout << "Total Matches: " << totalMatches << "\n";
+                std::cout << p1Name << " Wins: " << p1Wins << " (" << (static_cast<float>(p1Wins) / totalMatches * 100.0f) << "%)\n";
+                std::cout << "Greedy Wins: " << p2Wins << " (" << (static_cast<float>(p2Wins) / totalMatches * 100.0f) << "%)\n";
+                std::cout << "Draws: " << draws << "\n";
+                if (!useGUI) {
+                    std::cout << "Total Simulation Time: " << elapsed.count() << " ms\n";
+                    std::cout << "Average Time Per Match: " << (elapsed.count() / totalMatches) << " ms\n";
+                }
+                std::cout << "=========================================\n";
+                
+                delete agent1;
+            }
+            if (windowPtr) {
+                if (windowPtr->isOpen()) windowPtr->close();
+                delete windowPtr;
             }
         }
     }
