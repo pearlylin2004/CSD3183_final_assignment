@@ -3,11 +3,17 @@
 A C++ based Pokemon battle simulator and AI research environment, testing simultaneous turn-based move selection using Gen 3 combat mechanics.
 
 ## AI Algorithms Implemented
-This project evaluates advanced game-theoretic algorithms against a standard Greedy heuristic baseline:
+This project evaluates advanced game-theoretic algorithms against a standard heuristic baseline in a 6v6 simultaneous-move environment:
 
-- **Simultaneous Move Alpha-Beta (SMAB)**: Bypasses standard Minimax's structural inseparability in simultaneous games. Every decision node represents a zero-sum payoff matrix. The agent computes the maximum worst-case scenario (Maximin) while implementing strict dominance pruning to discard mathematically inferior branches.
-- **Information Set Monte Carlo Tree Search (IS-MCTS)**: An advanced tree-search algorithm. Before the standard 4-stage MCTS loop (Selection, Expansion, Simulation, Backpropagation), the algorithm determinizes the state. It uses the Decoupled UCT formula to navigate the simultaneous action space and converges on robust strategies over numerous random rollouts.
 - **Greedy Baseline**: A deterministic heuristic agent that picks the move with the highest immediate expected damage (factoring in STAB, type effectiveness, and accuracy). 
+
+- **Simultaneous Move Alpha-Beta (SMAB)**: Bypasses standard Minimax's structural inseparability in simultaneous games. Every decision node represents a zero-sum payoff matrix where the agent computes the maximum worst-case scenario (Maximin).
+  - *Expectiminimax*: Navigates the RNG of move accuracy by branching the game tree into deterministic hit/miss timelines, weighting the expected payoff by the probability of the move landing.
+  - *Heuristic Tuning*: Evaluates raw HP differentials rather than percentages to accurately protect bulky Pokemon, and avoids artificial "Fear of Success" penalties by naturally calculating the threat of incoming enemy counters.
+
+- **Information Set Monte Carlo Tree Search (IS-MCTS)**: An advanced tree-search algorithm utilizing the Decoupled UCT formula to navigate the simultaneous action space. Because it uses 50-turn rollouts.
+  - *Guided Opponent Modeling*: Instead of assuming the opponent plays randomly, MCTS models the opponent using the `GreedyAgent` logic at the root, forcing it to correctly respect devastating enemy attacks.
+  - *Heuristic-Guided Rollouts with Sigmoid Evaluation*: Replaces useless "random playouts" with highly-realistic 50-turn Greedy vs Greedy simulations. It converts the Delta HP generated during the rollout into a continuous 0.0 to 1.0 Win Probability using a Sigmoid function (aka S shape curve), mathematically teaching the agent how to claw back from massive HP deficits or execute long-term 50-turn defensive stall strategies. 
 
 ## Features
 - **Headless `GameState` Engine**: An ultra-fast simulation environment designed specifically for running deep AI tree-searches efficiently.
