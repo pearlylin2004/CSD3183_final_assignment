@@ -4,6 +4,7 @@
 #include <limits>
 #include <algorithm>
 #include <iostream>
+#include "GreedyAgent.h"
 
 MCTSNode::MCTSNode(MCTSNode* parent, Action a1, Action a2) 
     : visits(0), winScore(0.0f), p1Action(a1), p2Action(a2), parent(parent) {}
@@ -52,25 +53,31 @@ GameState MCTSAgent::determinize(const GameState& state, int playerId) {
     return state;
 }
 
-int MCTSAgent::simulateRandomPlayout(GameState state, int povPlayerId) {
+float MCTSAgent::simulateRandomPlayout(GameState state, int povPlayerId) {
     int turns = 0;
-    while (state.player1.hasAlivePokemon() && state.player2.hasAlivePokemon() && turns < 20) {
-        std::vector<Action> p1Actions = generateLegalActions(state, 1);
-        std::vector<Action> p2Actions = generateLegalActions(state, 2);
-        
-        if (p1Actions.empty() || p2Actions.empty()) break;
-        
-        Action a1 = p1Actions[std::rand() % p1Actions.size()];
-        Action a2 = p2Actions[std::rand() % p2Actions.size()];
+    GreedyAgent greedy;
+    
+    float initialScore = state.evaluate(povPlayerId);
+    
+    while (state.player1.hasAlivePokemon() && state.player2.hasAlivePokemon() && turns < 50) {
+        Action a1 = greedy.getAction(state, 1);
+        Action a2 = greedy.getAction(state, 2);
         
         state.step(a1, a2);
         turns++;
     }
     
-    float score = state.evaluate(povPlayerId);
-    if (score > 0) return 1;
-    if (score < 0) return 0;
-    return 0; // tie/loss
+    float finalScore = state.evaluate(povPlayerId);
+    float deltaScore = finalScore - initialScore;
+    
+    // If the game actually ended, return absolute win/loss
+    if (!state.player1.hasAlivePokemon() && povPlayerId == 2) return 1.0f;
+    if (!state.player2.hasAlivePokemon() && povPlayerId == 1) return 1.0f;
+    if (!state.player1.hasAlivePokemon() || !state.player2.hasAlivePokemon()) return 0.0f;
+    
+    // Otherwise, convert the HP delta to a win probability (0.0 to 1.0) using a sigmoid
+    float winProb = 1.0f / (1.0f + std::exp(-deltaScore / 20.0f));
+    return winProb;
 }
 
 Action MCTSAgent::getAction(const GameState& state, int playerId) {
@@ -108,9 +115,9 @@ Action MCTSAgent::getAction(const GameState& state, int playerId) {
             }
         }
         
-        // Assume random enemy action for the rollout
-        std::vector<Action> enemyActions = generateLegalActions(simState, enemyPlayerId);
-        Action enemyAction = enemyActions[std::rand() % enemyActions.size()];
+        // Use GreedyAgent to predict the opponent's action instead of assuming they play randomly
+        GreedyAgent greedyRoot;
+        Action enemyAction = greedyRoot.getAction(simState, enemyPlayerId);
         
         Action myAction = myActions[bestActionIdx];
         
@@ -121,7 +128,7 @@ Action MCTSAgent::getAction(const GameState& state, int playerId) {
         }
         
         // 3. Simulation
-        int win = simulateRandomPlayout(simState, playerId);
+        float win = simulateRandomPlayout(simState, playerId);
         
         // 4. Backpropagation
         actionVisits[bestActionIdx]++;

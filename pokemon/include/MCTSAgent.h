@@ -26,5 +26,5 @@ public:
 private:
     std::vector<Action> generateLegalActions(const GameState& state, int playerId);
     GameState determinize(const GameState& state, int playerId);
-    int simulateRandomPlayout(GameState state, int povPlayerId);
+    float simulateRandomPlayout(GameState state, int povPlayerId);
 };

@@ -264,7 +264,7 @@ int main() {
                     int turns = 0, result = 0;
                     std::string actionLog = "Battle Start!";
                     
-                    while (result == 0 && turns < 500) {
+                    while (result == 0 && turns < 1000) {
                         if (useGUI) {
                             if (!windowPtr->isOpen()) break;
                             while (const std::optional<sf::Event> event = windowPtr->pollEvent())
