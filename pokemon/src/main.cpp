@@ -11,6 +11,7 @@
 #include <random>
 #include <vector>
 #include <chrono>
+#include <fstream>
 
 #include "Types.h"
 #include "Move.h"
@@ -229,6 +230,8 @@ int main() {
                 
                 int p1Wins = 0, p2Wins = 0, draws = 0;
                 
+                std::ofstream logFile("battle_log.txt");
+                
                 Agent* agent1 = nullptr;
                 std::string p1Name = "";
                 if (currentMode == 2) { agent1 = new GreedyAgent(); p1Name = "Greedy"; }
@@ -261,7 +264,7 @@ int main() {
                     int turns = 0, result = 0;
                     std::string actionLog = "Battle Start!";
                     
-                    while (result == 0 && turns < 100) {
+                    while (result == 0 && turns < 500) {
                         if (useGUI) {
                             if (!windowPtr->isOpen()) break;
                             while (const std::optional<sf::Event> event = windowPtr->pollEvent())
@@ -272,23 +275,40 @@ int main() {
                         Action a1 = agent1->getAction(state, 1);
                         Action a2 = agent2.getAction(state, 2);
                         
-                        if (useGUI) {
-                            Pokemon* oldP1 = state.player1.getActivePokemon();
-                            Pokemon* oldP2 = state.player2.getActivePokemon();
-                            actionLog = "";
-                            if (a1.type == ActionType::MOVE && oldP1) actionLog += oldP1->name + " used " + oldP1->moves[a1.index].name + "!\n";
-                            else if (a1.type == ActionType::SWITCH) actionLog += p1Name + " switched to " + state.player1.party[a1.index].name + "!\n";
-                            else if (a1.type == ActionType::POTION) actionLog += p1Name + " used a Potion!\n";
-                            
-                            if (a2.type == ActionType::MOVE && oldP2) actionLog += oldP2->name + " used " + oldP2->moves[a2.index].name + "!\n";
-                            else if (a2.type == ActionType::SWITCH) actionLog += "Greedy switched to " + state.player2.party[a2.index].name + "!\n";
-                            else if (a2.type == ActionType::POTION) actionLog += "Greedy used a Potion!\n";
-                            
-                            if (actionLog.empty()) actionLog = "Waiting for next turn...";
+                        Pokemon* oldP1 = state.player1.getActivePokemon();
+                        Pokemon* oldP2 = state.player2.getActivePokemon();
+                        actionLog = "";
+                        
+                        std::string p1MoveStr = "";
+                        if (a1.type == ActionType::MOVE && oldP1) p1MoveStr = oldP1->name + " used " + oldP1->moves[a1.index].name + "!";
+                        else if (a1.type == ActionType::SWITCH) p1MoveStr = p1Name + " switched to " + state.player1.party[a1.index].name + "!";
+                        else if (a1.type == ActionType::POTION) p1MoveStr = p1Name + " used a Potion!";
+                        
+                        std::string p2MoveStr = "";
+                        if (a2.type == ActionType::MOVE && oldP2) p2MoveStr = oldP2->name + " used " + oldP2->moves[a2.index].name + "!";
+                        else if (a2.type == ActionType::SWITCH) p2MoveStr = "Greedy switched to " + state.player2.party[a2.index].name + "!";
+                        else if (a2.type == ActionType::POTION) p2MoveStr = "Greedy used a Potion!";
+                        
+                        actionLog = p1MoveStr + "\n" + p2MoveStr;
+                        if (actionLog.empty()) actionLog = "Waiting for next turn...";
+                        
+                        if (logFile.is_open()) {
+                            logFile << "Turn " << turns << ":\n";
+                            logFile << "  " << p1Name << ": " << p1MoveStr << "\n";
+                            logFile << "  Greedy: " << p2MoveStr << "\n";
                         }
                         
                         result = state.step(a1, a2);
                         turns++;
+                        
+                        if (logFile.is_open()) {
+                            Pokemon* newP1 = state.player1.getActivePokemon();
+                            Pokemon* newP2 = state.player2.getActivePokemon();
+                            logFile << "  End of Turn State:\n";
+                            if (newP1) logFile << "    " << p1Name << "'s " << newP1->name << " HP: " << newP1->current_hp << "/" << newP1->max_hp << "\n";
+                            if (newP2) logFile << "    Greedy's " << newP2->name << " HP: " << newP2->current_hp << "/" << newP2->max_hp << "\n";
+                            logFile << "----------------------------------------\n";
+                        }
                         
                         if (useGUI) {
                             windowPtr->clear(sf::Color(240, 240, 240));

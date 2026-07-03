@@ -1,5 +1,7 @@
 #pragma once
 #include "Trainer.h"
+#include <vector>
+#include <utility>
 
 enum class ActionType {
     MOVE,
@@ -23,10 +25,14 @@ public:
     // Returns 1 if player1 wins, 2 if player2 wins, 0 if ongoing.
     int step(Action p1Action, Action p2Action);
     
+    // Generates all possible resulting states and their probabilities
+    std::vector<std::pair<GameState, float>> stepExpecti(Action p1Action, Action p2Action) const;
+    
     // Evaluate function as per heuristic specification
     float evaluate(int perspectivePlayer) const;
 
 private:
-    void simulateMoveHeadless(Pokemon* attacker, Pokemon* defender, Move move, int& defHp, bool& missed);
+    int stepInternal(Action p1Action, Action p2Action, int forcedP1Hit, int forcedP2Hit, float& outProb, bool& p1Consumed, bool& p2Consumed);
+    void simulateMoveHeadless(Pokemon* attacker, Pokemon* defender, Move move, int& defHp, bool& missed, int forcedHit, float& outProb, bool& consumed);
     void simulatePotionHeadless(Trainer& trainer, Pokemon* mon, int& simHp);
 };

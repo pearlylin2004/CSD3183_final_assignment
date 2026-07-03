@@ -4,7 +4,7 @@
 
 SMABAgent::SMABAgent(int depth) : searchDepth(depth) {}
 
-std::vector<Action> SMABAgent::generateLegalActions(const GameState& state, int playerId) {
+std::vector<Action> SMABAgent::generateLegalActions(const GameState& state, int playerId, bool assumeNoSwitch) {
     std::vector<Action> actions;
     const Trainer& trainer = (playerId == 1) ? state.player1 : state.player2;
     const Pokemon* active = trainer.getActivePokemon();
@@ -25,10 +25,12 @@ std::vector<Action> SMABAgent::generateLegalActions(const GameState& state, int 
     }
     
     // Switches
-    // Start from 1, because 0 is the currently active pokemon
-    for (int i = 1; i < trainer.party.size(); ++i) {
-        if (trainer.party[i].isAlive()) {
-            actions.push_back({ActionType::SWITCH, i});
+    if (!assumeNoSwitch) {
+        // Start from 1, because 0 is the currently active pokemon
+        for (int i = 1; i < trainer.party.size(); ++i) {
+            if (trainer.party[i].isAlive()) {
+                actions.push_back({ActionType::SWITCH, i});
+            }
         }
     }
     
@@ -48,7 +50,7 @@ float SMABAgent::smabSearch(const GameState& state, int depth, int povPlayerId) 
     int enemyPlayerId = (povPlayerId == 1) ? 2 : 1;
     
     std::vector<Action> myActions = generateLegalActions(state, povPlayerId);
-    std::vector<Action> enemyActions = generateLegalActions(state, enemyPlayerId);
+    std::vector<Action> enemyActions = generateLegalActions(state, enemyPlayerId, true); // Assume enemy doesn't switch unless forced
     
     if (myActions.empty()) return -99999.0f;
     if (enemyActions.empty()) return 99999.0f;
@@ -60,16 +62,23 @@ float SMABAgent::smabSearch(const GameState& state, int depth, int povPlayerId) 
         float worstCaseForThisAction = std::numeric_limits<float>::max();
         
         for (const auto& enemyAction : enemyActions) {
-            GameState nextState = state;
+            std::vector<std::pair<GameState, float>> outcomes;
             if (povPlayerId == 1) {
-                nextState.step(myAction, enemyAction);
+                outcomes = state.stepExpecti(myAction, enemyAction);
             } else {
-                nextState.step(enemyAction, myAction);
+                outcomes = state.stepExpecti(enemyAction, myAction);
             }
             
-            float score = smabSearch(nextState, depth - 1, povPlayerId);
-            if (score < worstCaseForThisAction) {
-                worstCaseForThisAction = score;
+            float expectedScore = 0.0f;
+            for (const auto& outcome : outcomes) {
+                expectedScore += outcome.second * smabSearch(outcome.first, depth - 1, povPlayerId);
+            }
+            if (myAction.type == ActionType::SWITCH) {
+                expectedScore -= 2.0f; // Small penalty to prevent infinite switching
+            }
+            
+            if (expectedScore < worstCaseForThisAction) {
+                worstCaseForThisAction = expectedScore;
             }
             
             // Pruning: if the worst case of THIS action is already worse than 
@@ -91,7 +100,7 @@ Action SMABAgent::getAction(const GameState& state, int playerId) {
     int enemyPlayerId = (playerId == 1) ? 2 : 1;
     
     std::vector<Action> myActions = generateLegalActions(state, playerId);
-    std::vector<Action> enemyActions = generateLegalActions(state, enemyPlayerId);
+    std::vector<Action> enemyActions = generateLegalActions(state, enemyPlayerId, true); // Assume enemy doesn't switch unless forced
     
     if (myActions.empty()) return {ActionType::MOVE, 0}; // Fallback
     if (myActions.size() == 1) return myActions[0]; // Forced action
@@ -103,16 +112,23 @@ Action SMABAgent::getAction(const GameState& state, int playerId) {
         float worstCaseForThisAction = std::numeric_limits<float>::max();
         
         for (int j = 0; j < enemyActions.size(); ++j) {
-            GameState nextState = state;
+            std::vector<std::pair<GameState, float>> outcomes;
             if (playerId == 1) {
-                nextState.step(myActions[i], enemyActions[j]);
+                outcomes = state.stepExpecti(myActions[i], enemyActions[j]);
             } else {
-                nextState.step(enemyActions[j], myActions[i]);
+                outcomes = state.stepExpecti(enemyActions[j], myActions[i]);
             }
             
-            float score = smabSearch(nextState, searchDepth - 1, playerId);
-            if (score < worstCaseForThisAction) {
-                worstCaseForThisAction = score;
+            float expectedScore = 0.0f;
+            for (const auto& outcome : outcomes) {
+                expectedScore += outcome.second * smabSearch(outcome.first, searchDepth - 1, playerId);
+            }
+            if (myActions[i].type == ActionType::SWITCH) {
+                expectedScore -= 2.0f; // Small penalty to prevent infinite switching
+            }
+            
+            if (expectedScore < worstCaseForThisAction) {
+                worstCaseForThisAction = expectedScore;
             }
             
             if (worstCaseForThisAction <= bestWorstCase) {

@@ -34,8 +34,23 @@ Action GreedyAgent::getAction(const GameState& state, int playerId) {
             // Estimate average expected damage factoring in acc
             score = (move.power * stab * effectiveness) * (move.accuracy / 100.0f);
         } else if (move.statTarget != Stat::None) {
-            // Give a flat nominal score to status moves so if all attacks are bad it uses non attack stuff
-            score = 10.0f * (move.accuracy / 100.0f);
+            const Pokemon* statTargetMon = move.targetSelf ? allyActive : enemyActive;
+            if (statTargetMon) {
+                int currentStage = 0;
+                if (move.statTarget == Stat::Attack) currentStage = statTargetMon->attack_stage;
+                else if (move.statTarget == Stat::Defense) currentStage = statTargetMon->defense_stage;
+                else if (move.statTarget == Stat::Speed) currentStage = statTargetMon->speed_stage;
+                else if (move.statTarget == Stat::Accuracy) currentStage = statTargetMon->accuracy_stage;
+                else if (move.statTarget == Stat::Evasion) currentStage = statTargetMon->evasion_stage;
+
+                if ((move.statChange > 0 && currentStage >= 6) || (move.statChange < 0 && currentStage <= -6)) {
+                    score = 0.0f; // Already maxed out
+                } else {
+                    score = 5.0f * (move.accuracy / 100.0f);
+                }
+            } else {
+                score = 5.0f * (move.accuracy / 100.0f);
+            }
         }
         
         if (score > bestScore) {
