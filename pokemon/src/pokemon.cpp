@@ -15,6 +15,20 @@ Pokemon::Pokemon(std::string n, Type t1, Type t2, int b_hp, int b_atk, int b_def
 
 void Pokemon::setLevel(int newLevel) {
     level = newLevel;
+    
+    // Apply evolutions
+    for (const auto& ev : evolutions) {
+        if (level >= ev.level) {
+            name = ev.newName;
+            type1 = ev.newType1;
+            type2 = ev.newType2;
+            base_hp = ev.newBaseHp;
+            base_atk = ev.newBaseAtk;
+            base_def = ev.newBaseDef;
+            base_spd = ev.newBaseSpd;
+        }
+    }
+
     // Calculate stats using Gen 3+ formula (excluding EVs cos fk that)
     max_hp = static_cast<int>(std::floor(0.01f * (2.0f * base_hp + iv_hp) * level)) + level + 10;
     attack = static_cast<int>(std::floor(0.01f * (2.0f * base_atk + iv_atk) * level)) + 5;
@@ -42,6 +56,26 @@ void Pokemon::addLearnMove(int lvl, Move m) {
             moves.erase(moves.begin());
         }
         moves.push_back(m);
+    }
+}
+
+void Pokemon::addEvolution(int lvl, std::string nName, Type t1, Type t2, int bhp, int batk, int bdef, int bspd) {
+    evolutions.push_back({lvl, nName, t1, t2, bhp, batk, bdef, bspd});
+    // Re-apply in case level is already set
+    if (level >= lvl) {
+        name = nName;
+        type1 = t1;
+        type2 = t2;
+        base_hp = bhp;
+        base_atk = batk;
+        base_def = bdef;
+        base_spd = bspd;
+        // Need to recalculate max_hp etc.
+        max_hp = static_cast<int>(std::floor(0.01f * (2.0f * base_hp + iv_hp) * level)) + level + 10;
+        attack = static_cast<int>(std::floor(0.01f * (2.0f * base_atk + iv_atk) * level)) + 5;
+        defense = static_cast<int>(std::floor(0.01f * (2.0f * base_def + iv_def) * level)) + 5;
+        speed = static_cast<int>(std::floor(0.01f * (2.0f * base_spd + iv_spd) * level)) + 5;
+        current_hp = max_hp;
     }
 }
 

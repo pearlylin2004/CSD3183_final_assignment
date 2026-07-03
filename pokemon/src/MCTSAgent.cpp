@@ -47,9 +47,7 @@ std::vector<Action> MCTSAgent::generateLegalActions(const GameState& state, int 
 }
 
 GameState MCTSAgent::determinize(const GameState& state, int playerId) {
-    // Information Set logic: Normally we would randomize hidden elements of the enemy.
-    // For this prototype, all moves are known, but we could randomly alter the enemy's stat stages
-    // or unknown items if they were hidden. Here we just return the true state as the "determinized" state.
+    // For this prototype, all moves are known
     return state;
 }
 
@@ -70,7 +68,6 @@ float MCTSAgent::simulateRandomPlayout(GameState state, int povPlayerId) {
     float finalScore = state.evaluate(povPlayerId);
     float deltaScore = finalScore - initialScore;
     
-    // If the game actually ended, return absolute win/loss
     if (!state.player1.hasAlivePokemon() && povPlayerId == 2) return 1.0f;
     if (!state.player2.hasAlivePokemon() && povPlayerId == 1) return 1.0f;
     if (!state.player1.hasAlivePokemon() || !state.player2.hasAlivePokemon()) return 0.0f;
@@ -92,11 +89,9 @@ Action MCTSAgent::getAction(const GameState& state, int playerId) {
 
     // MCTS Loop
     for (int i = 0; i < iterations; ++i) {
-        // 1. Determinization
         GameState simState = determinize(state, playerId);
         
-        // 2. We use a flat Monte Carlo approach for simultaneous moves at the root
-        // Decoupled UCT:
+        // flat Monte Carlo approach for simultaneous moves at the root
         int bestActionIdx = -1;
         float bestUCB = -std::numeric_limits<float>::max();
         
@@ -115,7 +110,7 @@ Action MCTSAgent::getAction(const GameState& state, int playerId) {
             }
         }
         
-        // Use GreedyAgent to predict the opponent's action instead of assuming they play randomly
+        // Use GreedyAgent to predict the opponents action instead of assuming they play randomly
         GreedyAgent greedyRoot;
         Action enemyAction = greedyRoot.getAction(simState, enemyPlayerId);
         
@@ -127,15 +122,13 @@ Action MCTSAgent::getAction(const GameState& state, int playerId) {
             simState.step(enemyAction, myAction);
         }
         
-        // 3. Simulation
         float win = simulateRandomPlayout(simState, playerId);
         
-        // 4. Backpropagation
         actionVisits[bestActionIdx]++;
         actionScores[bestActionIdx] += win;
     }
 
-    // Return the action with the most visits (most robust)
+    // Return the action with the most visits
     int bestFinalIdx = 0;
     int maxVisits = -1;
     for (int a = 0; a < myActions.size(); ++a) {

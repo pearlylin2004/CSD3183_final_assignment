@@ -42,7 +42,8 @@ void GameState::simulateMoveHeadless(Pokemon* attacker, Pokemon* defender, Move 
             float stab = (attacker->type1 == move.type || attacker->type2 == move.type) ? 1.5f : 1.0f;
             float effectiveness = getTypeEffectiveness(move.type, defender->type1) * getTypeEffectiveness(move.type, defender->type2);
             
-            int damage = static_cast<int>((((2.0f * 5.0f / 5.0f + 2.0f) * move.power * ((float)attacker->getAttack() / defender->getDefense())) / 50.0f + 2.0f) * stab * effectiveness);
+            float levelFactor = (2.0f * (float)attacker->level) / 5.0f + 2.0f;
+            int damage = static_cast<int>(((levelFactor * move.power * ((float)attacker->getAttack() / defender->getDefense())) / 50.0f + 2.0f) * stab * effectiveness);
             if (damage < 1) damage = 1;
             
             defHp -= damage;

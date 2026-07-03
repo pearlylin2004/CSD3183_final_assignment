@@ -3,7 +3,7 @@
 #include <functional>
 #include <optional>
 #include "Trainer.h"
-
+#include "Agent.h"
 enum class BattleState {
     PlayerTurn_Main,
     PlayerTurn_MoveSelect,
@@ -18,6 +18,7 @@ class Battle {
 private:
     Trainer* player;
     Trainer* enemy;
+    Agent* enemyAgent;
     sf::Font font;
     BattleState currentState;
     bool isFinished;
@@ -57,6 +58,6 @@ private:
     void simulateEnemyPotion(Pokemon* eMon, int& eSimHp);
 
 public:
-    Battle(Trainer* p, Trainer* e);
+    Battle(Trainer* p, Trainer* e, Agent* enemyAgent = nullptr);
     void run(sf::RenderWindow& window);
 };

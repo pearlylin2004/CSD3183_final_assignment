@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cstdlib>
 
-Battle::Battle(Trainer* p, Trainer* e) : player(p), enemy(e), currentState(BattleState::Action_Text), selectedMenuIndex(0), isFinished(false) {
+Battle::Battle(Trainer* p, Trainer* e, Agent* agent) : player(p), enemy(e), enemyAgent(agent), currentState(BattleState::Action_Text), selectedMenuIndex(0), isFinished(false) {
     if (!font.openFromFile("C:\\Windows\\Fonts\\arial.ttf")) {
         std::cout << "Failed to load font!\n";
     }
@@ -55,7 +55,8 @@ void Battle::simulateMove(Pokemon* attacker, Pokemon* defender, Move move, int& 
             float stab = (attacker->type1 == move.type || attacker->type2 == move.type) ? 1.5f : 1.0f;
             float effectiveness = getTypeEffectiveness(move.type, defender->type1) * getTypeEffectiveness(move.type, defender->type2);
             
-            damage = static_cast<int>((((2.0f * 5.0f / 5.0f + 2.0f) * move.power * ((float)attacker->getAttack() / defender->getDefense())) / 50.0f + 2.0f) * stab * effectiveness);
+            float levelFactor = (2.0f * (float)attacker->level) / 5.0f + 2.0f;
+            damage = static_cast<int>(((levelFactor * move.power * ((float)attacker->getAttack() / defender->getDefense())) / 50.0f + 2.0f) * stab * effectiveness);
             if (damage < 1) damage = 1;
             
             if (effectiveness > 1.0f) msg += "\nIt's super effective!";
@@ -124,16 +125,35 @@ void Battle::resolveTurn(int playerMoveIndex, bool usedItemOrSwitched, int pHeal
 
     int enemyMoveIndex = std::rand() % static_cast<int>(eMon->moves.size());
     bool enemyUsedPotion = false;
+    bool enemySwitched = false;
+    int enemySwitchIndex = -1;
     
-    // Enemy trainer 50% chance to use a potion if HP <= 30%
-    if (enemy->potions > 0 && eSimHp <= eMon->max_hp * 0.3f && (std::rand() % 100 < 50)) {
-        enemyUsedPotion = true;
+    if (enemyAgent) {
+        GameState state(*player, *enemy);
+        Action action = enemyAgent->getAction(state, 2);
+        if (action.type == ActionType::MOVE) {
+            enemyMoveIndex = action.index;
+        } else if (action.type == ActionType::POTION) {
+            enemyUsedPotion = true;
+        } else if (action.type == ActionType::SWITCH) {
+            enemySwitched = true;
+            enemySwitchIndex = action.index;
+        }
+    } else {
+        // Enemy trainer 50% chance to use a potion if HP <= 30%
+        if (enemy->potions > 0 && eSimHp <= eMon->max_hp * 0.3f && (std::rand() % 100 < 50)) {
+            enemyUsedPotion = true;
+        }
     }
 
     // Determine turn order
     if (usedItemOrSwitched) {
         if (enemyUsedPotion) {
             simulateEnemyPotion(eMon, eSimHp);
+        } else if (enemySwitched) {
+            enemy->switchPokemon(enemySwitchIndex);
+            updateSprites();
+            pushEvent("Trainer " + enemy->name + " switched to " + enemy->party[enemySwitchIndex].name + "!");
         } else {
             simulateMove(eMon, pMon, eMon->moves[enemyMoveIndex], pSimHp);
         }
@@ -141,8 +161,13 @@ void Battle::resolveTurn(int playerMoveIndex, bool usedItemOrSwitched, int pHeal
         if (enemyUsedPotion) {
             simulateEnemyPotion(eMon, eSimHp);
             simulateMove(pMon, eMon, pMon->moves[playerMoveIndex], eSimHp);
+        } else if (enemySwitched) {
+            enemy->switchPokemon(enemySwitchIndex);
+            updateSprites();
+            pushEvent("Trainer " + enemy->name + " switched to " + enemy->party[enemySwitchIndex].name + "!");
+            simulateMove(pMon, enemy->getActivePokemon(), pMon->moves[playerMoveIndex], eSimHp);
         } else {
-            bool playerGoesFirst = pMon->speed >= eMon->speed;
+            bool playerGoesFirst = pMon->getSpeed() >= eMon->getSpeed();
             if (playerGoesFirst) {
                 simulateMove(pMon, eMon, pMon->moves[playerMoveIndex], eSimHp);
                 if (eSimHp > 0) {

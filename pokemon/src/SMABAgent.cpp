@@ -55,7 +55,6 @@ float SMABAgent::smabSearch(const GameState& state, int depth, int povPlayerId) 
     if (myActions.empty()) return -99999.0f;
     if (enemyActions.empty()) return 99999.0f;
     
-    // Maximin logic with Alpha-Beta style dominance pruning
     float bestWorstCase = -std::numeric_limits<float>::max();
     
     for (const auto& myAction : myActions) {
@@ -81,7 +80,7 @@ float SMABAgent::smabSearch(const GameState& state, int depth, int povPlayerId) 
                 worstCaseForThisAction = expectedScore;
             }
             
-            // Pruning: if the worst case of THIS action is already worse than 
+            // if the worst case of THIS action is already worse than 
             // the best worst-case we've found in a PREVIOUS action, stop searching.
             if (worstCaseForThisAction <= bestWorstCase) {
                 break;

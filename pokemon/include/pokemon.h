@@ -27,6 +27,14 @@ public:
     };
     std::vector<LearnMove> learnset;
 
+    struct Evolution {
+        int level;
+        std::string newName;
+        Type newType1, newType2;
+        int newBaseHp, newBaseAtk, newBaseDef, newBaseSpd;
+    };
+    std::vector<Evolution> evolutions;
+
     int attack_stage = 0;
     int defense_stage = 0;
     int speed_stage = 0;
@@ -46,6 +54,7 @@ public:
 
     void addMove(Move m);
     void addLearnMove(int lvl, Move m);
+    void addEvolution(int lvl, std::string nName, Type t1, Type t2, int bhp, int batk, int bdef, int bspd);
     bool isAlive() const;
     void takeDamage(int damage);
     void heal(int amount);
