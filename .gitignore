@@ -66,3 +66,5 @@ vcpkg_installed/
 !pokemon/vendor/sfml/debug/**
 !pokemon/vendor/sfml/bin/
 !pokemon/vendor/sfml/bin/**
+
+pokemon/battle_log.txt
