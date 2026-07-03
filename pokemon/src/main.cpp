@@ -23,11 +23,7 @@
 #include "SMABAgent.h"
 #include "MCTSAgent.h"
 
-int main() {
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-
-    std::srand(static_cast<unsigned int>(std::time(0)));
-
+std::vector<Pokemon> initAllPokemon() {
     std::vector<Pokemon> allPokemon;
 
     Pokemon charmander("Charmander", Type::Fire, Type::None, 39, 52, 43, 65);
@@ -240,6 +236,15 @@ int main() {
     zubat.addEvolution(42, "Crobat", Type::Poison, Type::Flying, 85, 90, 80, 130);
     allPokemon.push_back(zubat);
 
+    return allPokemon;
+}
+
+int main() {
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
+    std::srand(static_cast<unsigned int>(std::time(0)));
+
+    std::vector<Pokemon> allPokemon = initAllPokemon();
     std::random_device rd;
     std::mt19937 g(rd());
 
