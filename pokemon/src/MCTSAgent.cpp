@@ -47,7 +47,6 @@ std::vector<Action> MCTSAgent::generateLegalActions(const GameState& state, int 
 }
 
 GameState MCTSAgent::determinize(const GameState& state, int playerId) {
-    // For this prototype, all moves are known
     return state;
 }
 
@@ -55,9 +54,11 @@ float MCTSAgent::simulateRandomPlayout(GameState state, int povPlayerId) {
     int turns = 0;
     GreedyAgent greedy;
     
-    float initialScore = state.evaluate(povPlayerId);
-    
-    while (state.player1.hasAlivePokemon() && state.player2.hasAlivePokemon() && turns < 50) {
+    while (state.player1.hasAlivePokemon() && state.player2.hasAlivePokemon() && turns < 30) {
+        auto a1s = generateLegalActions(state, 1);
+        auto a2s = generateLegalActions(state, 2);
+        if (a1s.empty() || a2s.empty()) break;
+        
         Action a1 = greedy.getAction(state, 1);
         Action a2 = greedy.getAction(state, 2);
         
@@ -65,78 +66,127 @@ float MCTSAgent::simulateRandomPlayout(GameState state, int povPlayerId) {
         turns++;
     }
     
-    float finalScore = state.evaluate(povPlayerId);
-    float deltaScore = finalScore - initialScore;
-    
     if (!state.player1.hasAlivePokemon() && povPlayerId == 2) return 1.0f;
     if (!state.player2.hasAlivePokemon() && povPlayerId == 1) return 1.0f;
     if (!state.player1.hasAlivePokemon() || !state.player2.hasAlivePokemon()) return 0.0f;
     
-    // Otherwise, convert the HP delta to a win probability (0.0 to 1.0) using a sigmoid
-    float winProb = 1.0f / (1.0f + std::exp(-deltaScore / 20.0f));
-    return winProb;
+    float score1 = state.evaluate(1);
+    float score2 = state.evaluate(2);
+    
+    if (povPlayerId == 1) {
+        return score1 > score2 ? 1.0f : 0.0f;
+    } else {
+        return score2 > score1 ? 1.0f : 0.0f;
+    }
 }
 
 Action MCTSAgent::getAction(const GameState& state, int playerId) {
     int enemyPlayerId = (playerId == 1) ? 2 : 1;
-    std::vector<Action> myActions = generateLegalActions(state, playerId);
+    auto myActions = generateLegalActions(state, playerId);
     
     if (myActions.empty()) return {ActionType::MOVE, 0};
     if (myActions.size() == 1) return myActions[0];
 
-    std::vector<float> actionScores(myActions.size(), 0.0f);
-    std::vector<int> actionVisits(myActions.size(), 0);
+    auto root = std::make_unique<MCTSNode>();
 
-    // MCTS Loop
     for (int i = 0; i < iterations; ++i) {
+        MCTSNode* node = root.get();
         GameState simState = determinize(state, playerId);
-        
-        // flat Monte Carlo approach for simultaneous moves at the root
-        int bestActionIdx = -1;
-        float bestUCB = -std::numeric_limits<float>::max();
-        
-        for (int a = 0; a < myActions.size(); ++a) {
-            float ucb;
-            if (actionVisits[a] == 0) {
-                ucb = 99999.0f; // explore unvisited
-            } else {
-                float exploitation = actionScores[a] / actionVisits[a];
-                float exploration = 1.41f * std::sqrt(std::log((float)i + 1.0f) / actionVisits[a]);
-                ucb = exploitation + exploration;
+
+        while (node->isFullyExpanded(generateLegalActions(simState, 1).size(), generateLegalActions(simState, 2).size()) && !node->children.empty()) {
+            MCTSNode* bestChild = nullptr;
+            float bestUCB1 = -1e9f, bestUCB2 = -1e9f;
+            Action bestA1 = {ActionType::MOVE, 0}, bestA2 = {ActionType::MOVE, 0};
+
+            auto a1s = generateLegalActions(simState, 1);
+            auto a2s = generateLegalActions(simState, 2);
+
+            for (const auto& a1 : a1s) {
+                float sumScore = 0.0f; int visits = 0;
+                for (const auto& child : node->children) {
+                    if (child->p1Action.type == a1.type && child->p1Action.index == a1.index) {
+                        sumScore += (playerId == 1) ? child->winScore : (child->visits - child->winScore);
+                        visits += child->visits;
+                    }
+                }
+                float ucb = visits == 0 ? 9999.0f : (sumScore / visits) + 1.41f * std::sqrt(std::log((float)node->visits) / visits);
+                if (ucb > bestUCB1) { bestUCB1 = ucb; bestA1 = a1; }
             }
-            if (ucb > bestUCB) {
-                bestUCB = ucb;
-                bestActionIdx = a;
+            
+            for (const auto& a2 : a2s) {
+                float sumScore = 0.0f; int visits = 0;
+                for (const auto& child : node->children) {
+                    if (child->p2Action.type == a2.type && child->p2Action.index == a2.index) {
+                        sumScore += (playerId == 2) ? child->winScore : (child->visits - child->winScore);
+                        visits += child->visits;
+                    }
+                }
+                float ucb = visits == 0 ? 9999.0f : (sumScore / visits) + 1.41f * std::sqrt(std::log((float)node->visits) / visits);
+                if (ucb > bestUCB2) { bestUCB2 = ucb; bestA2 = a2; }
+            }
+
+            for (const auto& child : node->children) {
+                if (child->p1Action.type == bestA1.type && child->p1Action.index == bestA1.index &&
+                    child->p2Action.type == bestA2.type && child->p2Action.index == bestA2.index) {
+                    bestChild = child.get();
+                    break;
+                }
+            }
+            
+            if (!bestChild) break; 
+            node = bestChild;
+            simState.step(node->p1Action, node->p2Action);
+        }
+
+        if (simState.player1.hasAlivePokemon() && simState.player2.hasAlivePokemon()) {
+            auto a1s = generateLegalActions(simState, 1);
+            auto a2s = generateLegalActions(simState, 2);
+            
+            bool expanded = false;
+            for (const auto& a1 : a1s) {
+                for (const auto& a2 : a2s) {
+                    bool exists = false;
+                    for (const auto& child : node->children) {
+                        if (child->p1Action.type == a1.type && child->p1Action.index == a1.index &&
+                            child->p2Action.type == a2.type && child->p2Action.index == a2.index) {
+                            exists = true; break;
+                        }
+                    }
+                    if (!exists) {
+                        node->children.push_back(std::make_unique<MCTSNode>(node, a1, a2));
+                        node = node->children.back().get();
+                        simState.step(a1, a2);
+                        expanded = true;
+                        break;
+                    }
+                }
+                if (expanded) break;
             }
         }
-        
-        // Use GreedyAgent to predict the opponents action instead of assuming they play randomly
-        GreedyAgent greedyRoot;
-        Action enemyAction = greedyRoot.getAction(simState, enemyPlayerId);
-        
-        Action myAction = myActions[bestActionIdx];
-        
-        if (playerId == 1) {
-            simState.step(myAction, enemyAction);
-        } else {
-            simState.step(enemyAction, myAction);
-        }
-        
+
         float win = simulateRandomPlayout(simState, playerId);
-        
-        actionVisits[bestActionIdx]++;
-        actionScores[bestActionIdx] += win;
-    }
 
-    // Return the action with the most visits
-    int bestFinalIdx = 0;
-    int maxVisits = -1;
-    for (int a = 0; a < myActions.size(); ++a) {
-        if (actionVisits[a] > maxVisits) {
-            maxVisits = actionVisits[a];
-            bestFinalIdx = a;
+        while (node != nullptr) {
+            node->visits++;
+            node->winScore += win;
+            node = node->parent;
         }
     }
 
-    return myActions[bestFinalIdx];
+    int bestVisits = -1;
+    Action bestAction = myActions[0];
+    
+    for (const auto& action : myActions) {
+        int visits = 0;
+        for (const auto& child : root->children) {
+            if (playerId == 1 && child->p1Action.type == action.type && child->p1Action.index == action.index) visits += child->visits;
+            if (playerId == 2 && child->p2Action.type == action.type && child->p2Action.index == action.index) visits += child->visits;
+        }
+        if (visits > bestVisits) {
+            bestVisits = visits;
+            bestAction = action;
+        }
+    }
+
+    return bestAction;
 }

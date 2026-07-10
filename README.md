@@ -37,8 +37,10 @@ The benchmark outputs total win percentages, draws, and the average computationa
 - **X** or **Escape**: Go back / Cancel
 
 ## Dependencies & Installation
-This project uses **SFML 3** for graphics and window management. The SFML libraries are vendored into the repository for portability, so you do not need `vcpkg`.
+This project uses **SFML 3** for graphics and window management (vendored into the repository) and **GLPK (GNU Linear Programming Kit)** via `vcpkg` to compute Nash Equilibriums for the SMAB AI agent.
+
+All required dlls is provided in vendor folder and should be automatically copied to exe folder on build.
 
 1. Open `pokemon/pokemon.slnx` or `pokemon/pokemon.vcxproj` in Visual Studio 2022.
 2. Ensure the build configuration is set to `x64` (Debug or Release).
-3. Build and Run the project!
+3. Build and Run the project

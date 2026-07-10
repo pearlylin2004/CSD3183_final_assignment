@@ -12,5 +12,5 @@ public:
 
 private:
     std::vector<Action> generateLegalActions(const GameState& state, int playerId, bool assumeNoSwitch = false);
-    float smabSearch(const GameState& state, int depth, int povPlayerId);
+    float smabSearch(const GameState& state, int depth, int povPlayerId, float alpha, float beta);
 };
