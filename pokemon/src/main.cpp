@@ -331,8 +331,8 @@ int main() {
                 rival.healAll();
                 
                 GreedyAgent greedyAgent;
-                SMABAgent smabAgent;
-                MCTSAgent mctsAgent;
+                SMABAgent smabAgent(3);
+                MCTSAgent mctsAgent(10000);
                 Agent* selectedAgent = nullptr;
                 if (guiAgentChoice == 2) selectedAgent = &greedyAgent;
                 else if (guiAgentChoice == 3) selectedAgent = &smabAgent;
@@ -379,7 +379,7 @@ int main() {
                 std::string p1Name = "";
                 if (currentMode == 2) { agent1 = new GreedyAgent(); p1Name = "Greedy"; }
                 else if (currentMode == 3) { agent1 = new SMABAgent(2); p1Name = "SMAB"; }
-                else if (currentMode == 4) { agent1 = new MCTSAgent(100); p1Name = "MCTS"; }
+                else if (currentMode == 4) { agent1 = new MCTSAgent(2000); p1Name = "MCTS"; }
                 
                 GreedyAgent agent2; 
                 

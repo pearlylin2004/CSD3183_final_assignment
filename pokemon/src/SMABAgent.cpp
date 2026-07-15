@@ -3,6 +3,8 @@
 #include <limits>
 #include <iostream>
 #include <glpk.h>
+#include <utility>
+#include <cstdlib>
 
 SMABAgent::SMABAgent(int depth) : searchDepth(depth) {}
 
@@ -36,11 +38,11 @@ std::vector<Action> SMABAgent::generateLegalActions(const GameState& state, int 
 }
 
 // no win win or lose lose
-float solveZeroSumGame(const std::vector<std::vector<float>>& matrix) {
+std::pair<float, std::vector<float>> solveZeroSumGame(const std::vector<std::vector<float>>& matrix) {
     int numRows = matrix.size();
-    if (numRows == 0) return 0.0f;
+    if (numRows == 0) return {0.0f, {}};
     int numCols = matrix[0].size();
-    if (numCols == 0) return 0.0f;
+    if (numCols == 0) return {0.0f, {}};
 
     glp_prob *lp = glp_create_prob();
     glp_set_obj_dir(lp, GLP_MAX);
@@ -82,9 +84,15 @@ float solveZeroSumGame(const std::vector<std::vector<float>>& matrix) {
     
     glp_simplex(lp, &parm);
     float value = (float)glp_get_obj_val(lp);
+    
+    std::vector<float> strategy(numRows, 0.0f);
+    for (int i = 1; i <= numRows; ++i) {
+        strategy[i-1] = (float)glp_get_col_prim(lp, i + 1);
+    }
+    
     glp_delete_prob(lp);
     
-    return value;
+    return {value, strategy};
 }
 
 float SMABAgent::smabSearch(const GameState& state, int depth, int povPlayerId, float alpha, float beta) {
@@ -160,7 +168,7 @@ float SMABAgent::smabSearch(const GameState& state, int depth, int povPlayerId, 
         }
     }
     
-    return solveZeroSumGame(finalMatrix);
+    return solveZeroSumGame(finalMatrix).first;
 }
 
 Action SMABAgent::getAction(const GameState& state, int playerId) {
@@ -195,18 +203,17 @@ Action SMABAgent::getAction(const GameState& state, int playerId) {
         }
     }
     
-    int bestActionIndex = 0;
-    float bestWorstCase = -std::numeric_limits<float>::max();
+    auto result = solveZeroSumGame(matrix);
+    std::vector<float> strategy = result.second;
+    
+    float r = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
+    float cumulative = 0.0f;
     for (int i = 0; i < m; ++i) {
-        float minVal = std::numeric_limits<float>::max();
-        for (int j = 0; j < n; ++j) {
-            if (matrix[i][j] < minVal) minVal = matrix[i][j];
-        }
-        if (minVal > bestWorstCase) {
-            bestWorstCase = minVal;
-            bestActionIndex = i;
+        cumulative += strategy[i];
+        if (r <= cumulative) {
+            return myActions[i];
         }
     }
     
-    return myActions[bestActionIndex];
+    return myActions[0];
 }

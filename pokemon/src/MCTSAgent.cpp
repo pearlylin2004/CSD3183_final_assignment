@@ -59,8 +59,19 @@ float MCTSAgent::simulateRandomPlayout(GameState state, int povPlayerId) {
         auto a2s = generateLegalActions(state, 2);
         if (a1s.empty() || a2s.empty()) break;
         
-        Action a1 = greedy.getAction(state, 1);
-        Action a2 = greedy.getAction(state, 2);
+        Action a1;
+        if (static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX) < 0.20f) {
+            a1 = a1s[std::rand() % a1s.size()];
+        } else {
+            a1 = greedy.getAction(state, 1);
+        }
+        
+        Action a2;
+        if (static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX) < 0.20f) {
+            a2 = a2s[std::rand() % a2s.size()];
+        } else {
+            a2 = greedy.getAction(state, 2);
+        }
         
         state.step(a1, a2);
         turns++;
