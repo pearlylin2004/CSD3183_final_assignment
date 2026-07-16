@@ -23,6 +23,16 @@
 #include "SMABAgent.h"
 #include "MCTSAgent.h"
 
+// --- Configuration ---
+// Parameters for Play Mode
+constexpr int PLAY_SMAB_DEPTH = 3;
+constexpr int PLAY_MCTS_ITERATIONS = 10000;
+
+// Parameters for Benchmark Mode
+constexpr int BENCHMARK_SMAB_DEPTH = 2;
+constexpr int BENCHMARK_MCTS_ITERATIONS = 2000;
+// ------------------------
+
 std::vector<Pokemon> initAllPokemon() {
     std::vector<Pokemon> allPokemon;
 
@@ -324,15 +334,26 @@ int main() {
                     pool[p].setLevel(lvlDist(g));
                 }
 
-                player.addPokemon(pool[0]); player.addPokemon(pool[1]); player.addPokemon(pool[2]); player.addPokemon(pool[3]); player.addPokemon(pool[4]); player.addPokemon(pool[5]);
-                rival.addPokemon(pool[6]); rival.addPokemon(pool[7]); rival.addPokemon(pool[8]); rival.addPokemon(pool[9]); rival.addPokemon(pool[10]); rival.addPokemon(pool[11]);
+                player.addPokemon(pool[0]); 
+                player.addPokemon(pool[1]); 
+                player.addPokemon(pool[2]); 
+                player.addPokemon(pool[3]); 
+                player.addPokemon(pool[4]); 
+                player.addPokemon(pool[5]);
+
+                rival.addPokemon(pool[6]); 
+                rival.addPokemon(pool[7]); 
+                rival.addPokemon(pool[8]); 
+                rival.addPokemon(pool[9]); 
+                rival.addPokemon(pool[10]); 
+                rival.addPokemon(pool[11]);
 
                 player.healAll();
                 rival.healAll();
                 
                 GreedyAgent greedyAgent;
-                SMABAgent smabAgent(3);
-                MCTSAgent mctsAgent(10000);
+                SMABAgent smabAgent(PLAY_SMAB_DEPTH);
+                MCTSAgent mctsAgent(PLAY_MCTS_ITERATIONS);
                 Agent* selectedAgent = nullptr;
                 if (guiAgentChoice == 2) selectedAgent = &greedyAgent;
                 else if (guiAgentChoice == 3) selectedAgent = &smabAgent;
@@ -344,7 +365,7 @@ int main() {
         } else if ((mode >= 2 && mode <= 5) || (mode >= 6 && mode <= 9)) {
             bool useGUI = (mode >= 6 && mode <= 9);
             
-            int totalMatches = useGUI ? 5 : 20;
+            int totalMatches = 5;
             std::cout << "Enter number of matches to simulate: ";
             if (!(std::cin >> totalMatches)) break;
             
@@ -378,8 +399,8 @@ int main() {
                 Agent* agent1 = nullptr;
                 std::string p1Name = "";
                 if (currentMode == 2) { agent1 = new GreedyAgent(); p1Name = "Greedy"; }
-                else if (currentMode == 3) { agent1 = new SMABAgent(2); p1Name = "SMAB"; }
-                else if (currentMode == 4) { agent1 = new MCTSAgent(2000); p1Name = "MCTS"; }
+                else if (currentMode == 3) { agent1 = new SMABAgent(BENCHMARK_SMAB_DEPTH); p1Name = "SMAB"; }
+                else if (currentMode == 4) { agent1 = new MCTSAgent(BENCHMARK_MCTS_ITERATIONS); p1Name = "MCTS"; }
                 
                 GreedyAgent agent2; 
                 
